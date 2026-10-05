@@ -1,0 +1,28 @@
+# DonateFM bot — ruff sozlamalari
+#
+# Quyidagi qoidalar shu loyihada ATAYLAB chetlab o'tilgan (sabablari ko'rsatilgan).
+# Qolgan barcha qoidalar (I, F, UP, SIM, RUF, TRY, PIE, C4, ASYNC, DTZning
+# boshqalari va h.k.) to'liq tekshiriladi va 0 xato bilan o'tadi.
+
+exclude = [
+    "venv",
+    "archive",       # eski nusxalar (polling-backup, *.backup)
+    "__pycache__",
+    ".ruff_cache",
+]
+
+[lint]
+ignore = [
+    # Bot/web handlerlarida bitta so'rov xatosi butun jarayonni
+    # yiqitmasligi uchun keng `except Exception` ataylab ishlatiladi.
+    "BLE001",
+    # "except: pass" — ixtiyoriy operatsiyalar (yuborish/taymer/kesh)
+    # majburiy emas: xato bo'lsa jarayon baribir davom etishi kerak.
+    "S110",
+    # Naive (tz'siz) datetime ataylab: bot butun muddatlarni lokal
+    # vaqtda saqlaydi va solishtiradi. Aware datetime'ga o'tish
+    # barcha DB yozuvlari va solishtirish mantig'ini o'zgartirardi.
+    "DTZ005",
+    "DTZ006",
+    "DTZ007",
+]

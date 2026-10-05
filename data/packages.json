@@ -1,0 +1,477 @@
+{
+  "games": [
+    {
+      "id": "freefire",
+      "name": "Free Fire",
+      "emoji": "🔥",
+      "desc": "Diamondlar, Vaucherlar va Level Up",
+      "grid_mode": true,
+      "categories": {
+        "all": "Hammasi",
+        "diamond": "💎 Almazlar",
+        "voucher": "🎟 Vaucherlar",
+        "level": "📈 Level Up"
+      },
+      "packages": [
+        {
+          "id": "ff-100",
+          "name": "100 Diamonds",
+          "amount": "100",
+          "price": 10990,
+          "category": "diamond"
+        },
+        {
+          "id": "ff-341",
+          "name": "341 Diamonds",
+          "amount": "341",
+          "price": 33990,
+          "category": "diamond"
+        },
+        {
+          "id": "ff-572",
+          "name": "572 Diamonds",
+          "amount": "572",
+          "price": 54990,
+          "category": "diamond"
+        },
+        {
+          "id": "ff-1166",
+          "name": "1166 Diamonds",
+          "amount": "1166",
+          "price": 107990,
+          "category": "diamond",
+          "hit": true
+        },
+        {
+          "id": "ff-2398",
+          "name": "2398 Diamonds",
+          "amount": "2398",
+          "price": 215990,
+          "category": "diamond",
+          "hit": true
+        },
+        {
+          "id": "ff-6110",
+          "name": "6110 Diamonds",
+          "amount": "6110",
+          "price": 531990,
+          "category": "diamond"
+        },
+        {
+          "id": "ff-vh",
+          "name": "Haftalik kichkina (90💎)",
+          "amount": "90",
+          "price": 5500,
+          "category": "voucher"
+        },
+        {
+          "id": "ff-vho",
+          "name": "Haftalik obuna (450💎)",
+          "amount": "450",
+          "price": 22500,
+          "category": "voucher",
+          "hit": true
+        },
+        {
+          "id": "ff-vm",
+          "name": "Oylik obuna (2600💎)",
+          "amount": "2600",
+          "price": 82500,
+          "category": "voucher"
+        },
+        {
+          "id": "ff-lv6",
+          "name": "6 Level Up (120💎)",
+          "amount": "120",
+          "price": 5500,
+          "category": "level"
+        },
+        {
+          "id": "ff-lv10",
+          "name": "10 Level Up (200💎)",
+          "amount": "200",
+          "price": 7990,
+          "category": "level"
+        },
+        {
+          "id": "ff-lv15",
+          "name": "15 Level Up (200💎)",
+          "amount": "200",
+          "price": 7990,
+          "category": "level"
+        },
+        {
+          "id": "ff-lv20",
+          "name": "20 Level Up (200💎)",
+          "amount": "200",
+          "price": 7990,
+          "category": "level"
+        },
+        {
+          "id": "ff-lv25",
+          "name": "25 Level Up (200💎)",
+          "amount": "200",
+          "price": 7990,
+          "category": "level"
+        },
+        {
+          "id": "ff-lv30",
+          "name": "30 Level Up (350💎)",
+          "amount": "350",
+          "price": 13990,
+          "category": "level"
+        }
+      ]
+    },
+    {
+      "id": "pubg",
+      "name": "PUBG Mobile",
+      "emoji": "🪂",
+      "desc": "UC va Prime",
+      "grid_mode": true,
+      "packages": [
+        {
+          "id": "pubg-60",
+          "name": "60 UC",
+          "amount": "60",
+          "price": 12990
+        },
+        {
+          "id": "pubg-120",
+          "name": "120 UC",
+          "amount": "120",
+          "price": 25990
+        },
+        {
+          "id": "pubg-180",
+          "name": "180 UC",
+          "amount": "180",
+          "price": 38990
+        },
+        {
+          "id": "pubg-325",
+          "name": "325 UC",
+          "amount": "325",
+          "price": 63990
+        },
+        {
+          "id": "pubg-385",
+          "name": "385 UC",
+          "amount": "385",
+          "price": 74990
+        },
+        {
+          "id": "pubg-660",
+          "name": "660 UC",
+          "amount": "660",
+          "price": 125990,
+          "hit": true
+        },
+        {
+          "id": "pubg-985",
+          "name": "985 UC",
+          "amount": "985",
+          "price": 185990
+        },
+        {
+          "id": "pubg-1320",
+          "name": "1320 UC",
+          "amount": "1320",
+          "price": 249990
+        },
+        {
+          "id": "pubg-1800",
+          "name": "1800 UC",
+          "amount": "1800",
+          "price": 299990,
+          "hit": true
+        },
+        {
+          "id": "pubg-2460",
+          "name": "2460 UC",
+          "amount": "2460",
+          "price": 430990
+        },
+        {
+          "id": "pubg-3850",
+          "name": "3850 UC",
+          "amount": "3850",
+          "price": 599990
+        },
+        {
+          "id": "pubg-8100",
+          "name": "8100 UC",
+          "amount": "8100",
+          "price": 1199990
+        },
+        {
+          "id": "pubg-prime1",
+          "name": "Prime 1 oy",
+          "amount": "1",
+          "price": 14825
+        },
+        {
+          "id": "pubg-prime3",
+          "name": "Prime 3 oy",
+          "amount": "3",
+          "price": 40990
+        },
+        {
+          "id": "pubg-prime6",
+          "name": "Prime 6 oy",
+          "amount": "6",
+          "price": 77990
+        },
+        {
+          "id": "pubg-prime12",
+          "name": "Prime 12 oy",
+          "amount": "12",
+          "price": 145753
+        },
+        {
+          "id": "pubg-plus1",
+          "name": "Prime Plus 1 oy",
+          "amount": "1",
+          "price": 125990
+        },
+        {
+          "id": "pubg-plus3",
+          "name": "Prime Plus 3 oy",
+          "amount": "3",
+          "price": 370990
+        }
+      ]
+    },
+    {
+      "id": "ml",
+      "name": "Mobile Legends",
+      "emoji": "🥷",
+      "desc": "Diamondlar va to'plamlar",
+      "grid_mode": true,
+      "packages": [
+        {
+          "id": "ml-55",
+          "name": "55💎",
+          "amount": "55",
+          "price": 11500,
+          "hit": true,
+          "badge": "X2"
+        },
+        {
+          "id": "ml-86",
+          "name": "86 Diamonds",
+          "amount": "86",
+          "price": 18000
+        },
+        {
+          "id": "ml-165",
+          "name": "165💎",
+          "amount": "165",
+          "price": 33500,
+          "hit": true,
+          "badge": "X2"
+        },
+        {
+          "id": "ml-172",
+          "name": "172 Diamonds",
+          "amount": "172",
+          "price": 35720
+        },
+        {
+          "id": "ml-257",
+          "name": "257 Diamonds",
+          "amount": "257",
+          "price": 49750
+        },
+        {
+          "id": "ml-275",
+          "name": "275💎",
+          "amount": "275",
+          "price": 55990,
+          "hit": true,
+          "badge": "X2"
+        },
+        {
+          "id": "ml-565",
+          "name": "565💎",
+          "amount": "565",
+          "price": 110799,
+          "hit": true,
+          "badge": "X2"
+        },
+        {
+          "id": "ml-706",
+          "name": "706 Diamonds",
+          "amount": "706",
+          "price": 124340
+        },
+        {
+          "id": "ml-weekly",
+          "name": "Haftalik propusk",
+          "amount": "1",
+          "price": 22042
+        },
+        {
+          "id": "ml-weeklyelit",
+          "name": "Haftalik elit to'plam",
+          "amount": "1",
+          "price": 13780,
+          "hit": true
+        },
+        {
+          "id": "ml-monthly",
+          "name": "Oylik epik to'plam",
+          "amount": "1",
+          "price": 58630
+        }
+      ]
+    },
+    {
+      "id": "roblox",
+      "name": "Roblox",
+      "emoji": "👾",
+      "desc": "Robux",
+      "theme": "dark",
+      "grid_mode": true,
+      "packages": [
+        {
+          "id": "rb-50",
+          "name": "50 Robux",
+          "amount": "50",
+          "price": 12376,
+          "badge": "7117 ta"
+        },
+        {
+          "id": "rb-100",
+          "name": "100 Robux",
+          "amount": "100",
+          "price": 23518,
+          "badge": "8097 ta"
+        },
+        {
+          "id": "rb-280",
+          "name": "280 Robux",
+          "amount": "280",
+          "price": 44520,
+          "badge": "121 ta"
+        },
+        {
+          "id": "rb-369",
+          "name": "369 Robux",
+          "amount": "369",
+          "price": 49520,
+          "badge": "416 ta"
+        }
+      ]
+    },
+    {
+      "id": "standoff",
+      "name": "Standoff 2",
+      "emoji": "🔫",
+      "desc": "Gold",
+      "grid_mode": true,
+      "packages": [
+        {
+          "id": "so-100",
+          "name": "100 Gold",
+          "amount": "100",
+          "price": 20000
+        },
+        {
+          "id": "so-200",
+          "name": "200 Gold",
+          "amount": "200",
+          "price": 40000
+        },
+        {
+          "id": "so-300",
+          "name": "300 Gold",
+          "amount": "300",
+          "price": 57000
+        },
+        {
+          "id": "so-500",
+          "name": "500 Gold",
+          "amount": "500",
+          "price": 90000
+        }
+      ]
+    },
+    {
+      "id": "stars",
+      "name": "Telegram Stars",
+      "emoji": "⭐️",
+      "desc": "Stars to'ldirish",
+      "grid_mode": true,
+      "packages": [
+        {
+          "id": "st-50",
+          "name": "50 Stars",
+          "amount": "50",
+          "price": 13500
+        },
+        {
+          "id": "st-100",
+          "name": "100 Stars",
+          "amount": "100",
+          "price": 27000
+        },
+        {
+          "id": "st-250",
+          "name": "250 Stars",
+          "amount": "250",
+          "price": 67500
+        },
+        {
+          "id": "st-500",
+          "name": "500 Stars",
+          "amount": "500",
+          "price": 135000,
+          "hit": true
+        },
+        {
+          "id": "st-1000",
+          "name": "1000 Stars",
+          "amount": "1000",
+          "price": 270000
+        }
+      ]
+    },
+    {
+      "id": "premium",
+      "name": "Telegram Premium",
+      "emoji": "👑",
+      "desc": "Premium obuna",
+      "grid_mode": true,
+      "game_id_placeholder": "@username yoki Telegram ID kiriting",
+      "packages": [
+        {
+          "id": "prem-1m",
+          "name": "1 oy Premium",
+          "amount": "1 oy",
+          "price": 45000,
+          "hit": true
+        },
+        {
+          "id": "prem-3m",
+          "name": "3 oy Premium",
+          "amount": "3 oy",
+          "price": 160000
+        },
+        {
+          "id": "prem-6m",
+          "name": "6 oy Premium",
+          "amount": "6 oy",
+          "price": 220000
+        },
+        {
+          "id": "prem-12m",
+          "name": "1 yil Premium",
+          "amount": "1 yil",
+          "price": 385000,
+          "badge": "XIT"
+        }
+      ]
+    }
+  ]
+}

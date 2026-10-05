@@ -1,0 +1,19 @@
+# Named tunnel (stabil URL) — rejasi
+# Quick tunnel har uzilishda URL almashtiradi. Professional yechim:
+# Cloudflare'da 1 marta named tunnel yaratib, o'z domeningizni ulang.
+#
+# 1) cloudflared login (1 marta, brauzer bilan):
+#    cloudflared tunnel login
+# 2) tunnel yaratish:
+#    cloudflared tunnel create donatefm-webapp
+#    # chiqqan Tunnel ID ni pastga yozing
+# 3) DNS:
+#    cloudflared tunnel route dns donatefm-webapp webapp.sizning-domeningiz.uz
+# 4) bu faylni ~/.cloudflared/config.yml ga nusxalang va ID ni qo'ying:
+tunnel: TUNNEL_ID_NI_BU_YERGA
+credentials-file: /home/abror69/.cloudflared/TUNNEL_ID.json
+
+ingress:
+  - hostname: webapp.sizning-domeningiz.uz
+    service: http://127.0.0.1:8010
+  - service: http_status:404

@@ -1,0 +1,11 @@
+aiogram==3.31.0
+aiosqlite==0.22.1
+fastapi==0.141.1
+uvicorn==0.53.0
+requests==2.34.2
+starlette==0.47.2
+FlexbaseGFFT==3.0.2
+protobuf>=5.26.1
+Pillow
+pytesseract
+sentry-sdk

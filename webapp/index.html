@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1621">
+  <meta name="color-scheme" content="dark">
+  <title>Game Shop 🎮</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AE%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AE%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/static/style.css?v=20261001g">
+</head>
+<body>
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div id="splash">
+    <div class="splash-logo">🎮</div>
+    <div class="splash-title">GAME SHOP</div>
+    <div class="splash-bar"><div class="splash-progress"></div></div>
+  </div>
+  <div id="root">
+    <!-- HOME -->
+    <section id="view-home" class="view active">
+      <header class="topbar">
+        <div class="logo">🎮 GAME SHOP</div>
+        <div class="topbar-right">
+          <button class="icon-btn" id="btn-notif" onclick="openNotifications()" data-i18n-title="notifications" title="Bildirishnomalar">🔔<span class="badge" id="notif-badge" style="display:none">0</span></button>
+          <button class="icon-btn" id="btn-cart" onclick="openCart()" data-i18n-title="cart" title="Savat">🛒<span class="badge" id="cart-badge" style="display:none">0</span></button>
+          <div class="balans-chip" id="home-balans" onclick="openView('view-topup')">💰 0 so'm</div>
+        </div>
+      </header>
+      <div class="home-content">
+        <div class="balance-banner" onclick="openView('view-topup')">
+          <div class="bb-label" data-i18n="bal_label">Balansingiz</div>
+          <div class="bb-amount" id="balance-banner">0 so'm</div>
+          <div class="bb-topup"><span>⟁</span> <span data-i18n="topup">Hisobni to'ldirish</span></div>
+        </div>
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="openView('view-topup')"><span class="qa-ico">💳</span><span class="qa-label" data-i18n="topup_go">To'ldirish</span></button>
+          <button class="qa-btn" onclick="openView('view-history')"><span class="qa-ico">📦</span><span class="qa-label" data-i18n="orders">Buyurtmalar</span></button>
+          <button class="qa-btn" onclick="openReferral()"><span class="qa-ico">🤝</span><span class="qa-label" data-i18n="referral_short">Taklif</span></button>
+          <button class="qa-btn" onclick="openPromo()"><span class="qa-ico">🎁</span><span class="qa-label" data-i18n="promo_short">Promo</span></button>
+        </div>
+        <div class="fav-bar">
+          <button class="fav-filter active" id="fav-all" onclick="setHomeFilter('all')"><span>🎮</span> <span data-i18n="cat_all">Hammasi</span></button>
+          <button class="fav-filter" id="fav-only" onclick="setHomeFilter('fav')"><span>⭐</span> <span data-i18n="favorites">Sevimlilar</span></button>
+        </div>
+        <div class="game-filter-bar" id="game-filter-bar"></div>
+        <h2 class="section-title" data-i18n="games">O'YINLAR</h2>
+        <div class="games-grid" id="games-grid"></div>
+        <div id="fav-empty" class="empty-state" style="display:none">
+          <span class="empty-emoji">⭐</span>
+          <div class="empty-title" data-i18n="fav_empty_t">Sevimlilar yo'q</div>
+          <div class="empty-text" data-i18n="fav_empty_d">O'yin kartochkasiga bosib ⭐️ belgini qo'shing — keyin shu yerda tez topasiz.</div>
+          <button class="empty-cta" onclick="setHomeFilter('all')"><span>🎮</span> <span data-i18n="view_games">O'yinlarni ko'rish</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="view-game" class="view">
+      <header class="topbar">
+        <button class="back-btn" onclick="goBack()">‹</button>
+        <div class="logo" id="game-title">Free Fire</div>
+        <div class="topbar-right">
+          <button class="icon-btn" id="game-fav-btn" onclick="toggleGameFav()" data-i18n-title="favorite" title="Sevimli">⭐️</button>
+          <div class="balans-chip" id="game-balans" onclick="openView('view-topup')">💰 0 so'm</div>
+        </div>
+      </header>
+      <div class="game-content">
+        <div class="saved-ids" id="saved-ids"></div>
+        <div class="id-input-row">
+          <input type="text" id="player-id" data-i18n-ph="enter_id" placeholder="O'yin ID kiriting" autocomplete="off" inputmode="text">
+          <button class="verify-btn" id="verify-btn" onclick="verifyId()" data-i18n="verify">Tekshirish</button>
+        </div>
+        <div class="verify-result" id="verify-result"></div>
+        <div class="cat-tabs" id="cat-tabs" style="display:none"></div>
+        <h2 class="section-title" data-i18n="products">MAHSULOTNI TANLANG</h2>
+        <div class="games-grid products-grid" id="products-grid"></div>
+        <div class="empty-state" id="products-empty" style="display:none">
+          <span class="empty-emoji">📦</span>
+          <div class="empty-title" data-i18n="prod_empty_t">Mahsulot yo'q</div>
+          <div class="empty-text" data-i18n="prod_empty_d">Bu kategoriyada hozircha mahsulot mavjud emas.</div>
+        </div>
+      </div>
+      <div class="buy-bar" id="buy-bar" style="display:none">
+        <div class="buy-info">
+          <div class="buy-name" id="buy-name">—</div>
+          <div class="buy-price" id="buy-price">0 so'm</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="icon-btn" onclick="addToCart()" data-i18n-title="add_cart" title="Savatga" style="width:42px;height:42px">🛒</button>
+          <button class="buy-btn" onclick="openPay()" data-i18n="buy">Sotib olish</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOPUP -->
+    <section id="view-topup" class="view">
+      <header class="topbar">
+        <button class="back-btn" onclick="goBack()">‹</button>
+        <div class="logo" data-i18n="topup">Hisobni to'ldirish</div>
+      </header>
+      <div class="topup-content">
+        <div class="topup-card">
+          <div class="topup-row">
+            <div class="topup-label" data-i18n="pay_method">To'lov usuli</div>
+            <div class="topup-value" id="topup-method-label">Telegram Stars</div>
+          </div>
+          <div class="method-grid" id="methods-grid"></div>
+          <div class="topup-row" style="margin-top:20px">
+            <div class="topup-label" data-i18n="amount">Summa</div>
+          </div>
+          <div class="amount-presets" id="amount-presets"></div>
+          <input type="text" class="amount-input" id="topup-amount" data-i18n-ph="amount_ph" placeholder="Summani kiriting (so'm)" inputmode="numeric">
+          <div class="min-hint" id="min-hint"></div>
+          <button class="big-btn" onclick="doTopup()" data-i18n="topup_go">To'ldirish</button>
+        </div>
+        <div class="note-card">
+          <b data-i18n="guide">Qo'llanma</b>
+          <p data-i18n-html="guide_body">1. Usulni tanlang<br>2. Summani kiriting<br>3. To'lang va balansingiz avtomatik yoki admin tasdiqlashidan so'ng to'ladi</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="view-history" class="view">
+      <header class="topbar">
+        <div class="logo" data-i18n="history">Tarix</div>
+        <button class="icon-btn" onclick="refreshHistory()" data-i18n-title="refresh" title="Yangilash">⟳</button>
+      </header>
+      <div class="history-tabs">
+        <button class="htab active" data-tab="orders" onclick="switchHistory(this,'orders')" data-i18n="orders">Buyurtmalar</button>
+        <button class="htab" data-tab="finance" onclick="switchHistory(this,'finance')" data-i18n="finance">Moliya</button>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view">
+      <header class="topbar">
+        <div class="logo" data-i18n="settings">Sozlamalar</div>
+      </header>
+      <div class="settings-content">
+        <div class="profile-card">
+          <div class="profile-avatar">👤</div>
+          <div class="profile-info">
+            <div class="profile-name" id="set-name">—</div>
+            <div class="profile-id">ID: <span id="set-userid">—</span></div>
+          </div>
+          <button class="icon-btn" id="btn-refresh-profile" onclick="refreshProfile()" data-i18n-title="refresh" title="Yangilash">🔄</button>
+        </div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-val" id="set-balance">0</div><div class="stat-label" data-i18n="balance">BALANS</div></div>
+          <div class="stat-box"><div class="stat-val" id="set-keshbek">0</div><div class="stat-label" data-i18n="keshbek">KESHBEK</div></div>
+        </div>
+        <div class="setting-block">
+          <div class="setting-row">
+            <span>🌙 <span data-i18n="theme">Mavzu</span></span>
+            <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Dark / Light"></div>
+          </div>
+          <div class="setting-row">
+            <span data-i18n="phone">Telefon raqami</span>
+            <input type="text" id="set-phone" placeholder="+998..." value="">
+            <button class="mini-btn" onclick="savePhone()" data-i18n="save">Saqlash</button>
+          </div>
+          <div class="setting-row">
+            <span data-i18n="lang">Til</span>
+            <div class="lang-toggle">
+              <button class="lbtn active" onclick="setLang('uz')">O'zbekcha</button>
+              <button class="lbtn" onclick="setLang('ru')">Русский</button>
+              <button class="lbtn" onclick="setLang('en')">English</button>
+            </div>
+          </div>
+        </div>
+        <h3 class="section-title" data-i18n="services">XIZMATLAR</h3>
+        <div class="service-list">
+          <div class="service-row" onclick="openReferral()">
+            <div class="service-row-left"><span class="svc-ico" style="background:rgba(61,220,132,.12)">🤝</span><span data-i18n="invite">Do'stlarni taklif qilish</span></div>
+            <span class="svc-arrow">›</span>
+          </div>
+          <div class="service-row" onclick="openLeaderboard()">
+            <div class="service-row-left"><span class="svc-ico" style="background:rgba(251,191,36,.12)">🏆</span><span data-i18n="lb_row">Reyting jadvali</span></div>
+            <span class="svc-arrow">›</span>
+          </div>
+          <div class="service-row" onclick="openPromo()">
+            <div class="service-row-left"><span class="svc-ico" style="background:rgba(139,92,246,.12)">🎁</span><span data-i18n="promo">Chegirma kodlar</span></div>
+            <span class="svc-arrow">›</span>
+          </div>
+          <div class="service-row" onclick="openNotifications()">
+            <div class="service-row-left"><span class="svc-ico" style="background:rgba(59,130,246,.12)">🔔</span><span data-i18n="notifications">Bildirishnomalar</span></div>
+            <span class="svc-arrow">›</span>
+          </div>
+          <div class="service-row" onclick="openSupport()">
+            <div class="service-row-left"><span class="svc-ico" style="background:rgba(236,72,153,.12)">💬</span><span data-i18n="support">Qo'llab-quvvatlash</span></div>
+            <span class="svc-arrow">›</span>
+          </div>
+          <div class="service-row" onclick="openInviteWeb()">
+            <div class="service-row-left"><span class="svc-ico" style="background:rgba(99,102,241,.12)">🔗</span><span data-i18n="invite_link_bot">Taklif havolasi (bot)</span></div>
+            <span class="svc-arrow">›</span>
+          </div>
+        </div>
+        <div class="rating-summary" id="rating-summary" style="display:none">
+          <div>
+            <div class="rs-score" id="rs-score">0.0</div>
+            <div class="rs-stars" id="rs-stars">☆☆☆☆☆</div>
+            <div class="rs-count" id="rs-count" data-i18n-html="rating_count:0">0 ta baholash</div>
+          </div>
+          <div style="flex:1;text-align:right;font-size:12px;color:var(--muted);line-height:1.5">
+            <span data-i18n="rating_hint">Buyurtmangiz bajarilgach ⭐️ bilan baholang — bu xizmatni yaxshilashga yordam beradi.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" data-view="view-home" onclick="openView('view-home')"><span class="nav-ico">🏠</span><span data-i18n="home">Bosh sahifa</span></button>
+      <button class="nav-item" data-view="view-history" onclick="openView('view-history')"><span class="nav-ico">📜</span><span data-i18n="history">Tarix</span></button>
+      <button class="nav-item" data-view="view-settings" onclick="openView('view-settings')"><span class="nav-ico">⚙️</span><span data-i18n="settings">Sozlamalar</span></button>
+      <button class="nav-item" data-view="view-admin" onclick="openView('view-admin')" id="nav-admin" style="display:none"><span class="nav-ico">👑</span><span data-i18n="nav_admin">Admin</span></button>
+    </nav>
+
+  <!-- ADMIN PANEL -->
+  <section id="view-admin" class="view">
+    <header class="topbar">
+      <button class="back-btn" onclick="goBack()">‹</button>
+      <div class="logo">👑 <span data-i18n="admin_panel">Admin panel</span></div>
+    </header>
+    <div class="admin-tabs">
+      <button class="atab active" data-tab="dash" onclick="switchAdmin('dash')" data-i18n-title="tab_dash" title="Dashboard">📊</button>
+      <button class="atab" data-tab="orders" onclick="switchAdmin('orders')" data-i18n-title="orders" title="Buyurtmalar">📦</button>
+      <button class="atab" data-tab="payments" onclick="switchAdmin('payments')" data-i18n-title="tab_payments" title="To'lovlar">💳</button>
+      <button class="atab" data-tab="users" onclick="switchAdmin('users')" data-i18n-title="tab_users" title="Foydalanuvchilar">👥</button>
+      <button class="atab" data-tab="promos" onclick="switchAdmin('promos')" data-i18n-title="tab_promos" title="Promokodlar">🎁</button>
+      <button class="atab" data-tab="games" onclick="switchAdmin('games')" data-i18n-title="tab_games" title="O'yinlar">🎮</button>
+      <button class="atab" data-tab="broadcast" onclick="switchAdmin('broadcast')" data-i18n-title="tab_broadcast" title="Xabar yuborish">✉️</button>
+      <button class="atab" data-tab="settings" onclick="switchAdmin('settings')" data-i18n-title="tab_settings" title="Sozlamalar">⚙️</button>
+      <button class="atab" data-tab="audit" onclick="switchAdmin('audit')" data-i18n-title="tab_audit" title="Audit">🕵️</button>
+    </div>
+    <div class="admin-content" id="admin-content"></div>
+  </section>
+  </div>
+
+  <!-- PAYMENT PAGE -->
+  <div class="page" id="pay-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePage()">‹</button>
+      <div class="page-title" data-i18n="pay_method">To'lov usuli</div>
+    </header>
+    <div class="page-body">
+      <div class="pay-amount">-<span id="pay-amount">0</span> <span data-i18n="sum_suffix">so'm</span></div>
+      <div class="sheet-methods">
+        <button class="pmethod" onclick="chooseMethod('balance')"><span class="pm-ico">💠</span><span data-i18n="pay_with_bal">Balans bilan</span><span class="pm-extra" id="pm-balance">0 so'm</span></button>
+        <button class="pmethod" onclick="chooseMethod('stars')"><span class="pm-ico">⭐️</span><span>Telegram Stars</span><span class="pm-extra">⬆</span></button>
+        <button class="pmethod" onclick="chooseMethod('paynet')"><span class="pm-ico">💳</span><span>PAYNET</span><span class="pm-extra">⬆</span></button>
+        <button class="pmethod" onclick="chooseMethod('uzqr')"><span class="pm-ico">📲</span><span data-i18n="pay_uzqr">UzQR Tezkor</span><span class="pm-extra">⬆</span></button>
+        <button class="pmethod" onclick="chooseMethod('card')"><span class="pm-ico">💳</span><span data-i18n="pay_by_card">Karta orqali</span><span class="pm-extra">⬆</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL PAYMENT PAGE -->
+  <div class="page" id="manual-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePage()">‹</button>
+      <div class="page-title" id="manual-title" data-i18n="pay_amount">To'lov</div>
+    </header>
+    <div class="page-body" id="manual-content"></div>
+  </div>
+
+  <!-- PAY TIMER PAGE -->
+  <div class="page" id="paytimer-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePayTimer()">‹</button>
+      <div class="page-title">💳 <span data-i18n="pay_window">To'lov oynasi</span></div>
+    </header>
+    <div class="page-body" id="paytimer-body"></div>
+  </div>
+
+  <!-- REFERRAL PAGE -->
+  <div class="page" id="referral-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePage()">‹</button>
+      <div class="page-title">🤝 <span data-i18n="invite">Do'stlarni taklif qilish</span></div>
+    </header>
+    <div class="page-body">
+      <div class="manual-inst">
+        <span data-i18n="ref_inst1">Do'st taklif qilgan foydalanuvchi hisob to'ldirganda siz</span> <b id="ref-percent">5%</b> <span data-i18n="ref_inst2">keshbek olasiz.</span>
+        <br><br>👥 <span data-i18n="invited">Taklif qilingan</span>: <b id="ref-count">0</b>
+        <br>🎁 <span data-i18n="ref_bonus">Olingan bonus</span>: <b id="ref-reward">0 so'm</b>
+      </div>
+      <div class="promo-row" style="margin:14px 0">
+        <input type="text" id="ref-link" readonly value="" class="text-input">
+        <button class="mini-btn" onclick="copyRef()" data-i18n="copy">Nusxalash</button>
+      </div>
+      <button class="big-btn" onclick="shareRef()">📩 <span data-i18n="share">Ulashish</span></button>
+      <button class="ghost-btn" onclick="openLeaderboard()">🏆 <span data-i18n="view_lb">Reyting jadvalini ko'rish</span></button>
+    </div>
+  </div>
+
+  <!-- PROMO PAGE -->
+  <div class="page" id="promo-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePage()">‹</button>
+      <div class="page-title">🎁 <span data-i18n="promo">Chegirma kodlar</span></div>
+    </header>
+    <div class="page-body">
+      <div class="manual-inst">
+        <span data-i18n="promo_inst1">Promokodni kiriting — balansingizga bonus qo'shiladi.</span>
+        <br><span data-i18n="promo_inst2">Kodlar: /promo KOD (botda) yoki bu yerga yozing.</span>
+      </div>
+      <div class="promo-row" style="margin:14px 0">
+        <input type="text" id="promo-input" data-i18n-ph="promo_placeholder" placeholder="Promokod" value="" class="text-input">
+        <button class="mini-btn" onclick="applyPromo()" data-i18n="apply">Qo'llash</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS PAGE -->
+  <div class="page" id="notif-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePage()">‹</button>
+      <div class="page-title">🔔 <span data-i18n="notifications">Bildirishnomalar</span></div>
+      <button class="mini-btn ghost" onclick="markAllRead()" data-i18n="mark_read">O'qilgan qilish</button>
+    </header>
+    <div class="page-body" id="notif-list"></div>
+  </div>
+
+  <!-- CART PAGE -->
+  <div class="page" id="cart-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePage()">‹</button>
+      <div class="page-title">🛒 <span data-i18n="cart">Savat</span></div>
+      <button class="mini-btn danger" onclick="clearCart()" data-i18n="clear_cart">Tozalash</button>
+    </header>
+    <div class="page-body" id="cart-list"></div>
+  </div>
+
+  <!-- LEADERBOARD PAGE -->
+  <div class="page" id="lb-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePage()">‹</button>
+      <div class="page-title">🏆 <span data-i18n="lb_title">Referral reytingi</span></div>
+    </header>
+    <div class="page-body" id="lb-list"></div>
+  </div>
+
+  <!-- RECEIPT PAGE (print/PDF) -->
+  <div class="page" id="receipt-sheet">
+    <div class="drag-handle"></div>
+    <header class="page-header">
+      <button class="back-btn" onclick="closePage()">‹</button>
+      <div class="page-title">🧾 <span data-i18n="receipt">Chek</span></div>
+      <button class="mini-btn" onclick="window.print()" data-i18n="print">PDF / Chop etish</button>
+    </header>
+    <div class="page-body" id="receipt-body"></div>
+  </div>
+
+  <div id="toast"></div>
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-text" id="modal-text"></div>
+      <input type="text" id="modal-input" class="amount-input" style="display:none" inputmode="numeric">
+      <div class="modal-actions">
+        <button class="ghost-btn" id="modal-cancel" style="margin:0" data-i18n="cancel">Bekor qilish</button>
+        <button class="mini-btn" id="modal-ok" style="flex:1;padding:14px" data-i18n="confirm">Tasdiqlash</button>
+      </div>
+    </div>
+  </div>
+  <script src="/static/app.js?v=20261001g"></script>
+</body>
+</html>
