@@ -68,7 +68,7 @@ class _TransientNetworkFilter(logging.Filter):
 
     def filter(self, record):
         try:
-            if record.levelno >= logging.ERROR and record.name.startswith("aiogram"):
+            if record.levelno >= logging.ERROR and "aiogram" in record.name:
                 msg = str(record.getMessage()).lower()
                 if any(n in msg for n in self._NOISE):
                     record.levelno = logging.WARNING
@@ -78,7 +78,26 @@ class _TransientNetworkFilter(logging.Filter):
         return True
 
 
-logging.getLogger("aiogram").addFilter(_TransientNetworkFilter())
+def _install_transient_filter():
+    """Filtr HANDLER'ga qo'yiladi, logger'ga emas.
+
+    Muhim: logging.Filter faqat o'sha logger orqali yozilgan recordlarni
+    tekshiradi. `aiogram.dispatcher` kabi child logger'lar esa o'z record'ini
+    yaratadi — parent logger filtri ularga TEGMAYDI. Faqat handler filtri
+    propagation paytida ishlaydi. Shu sabab filtr root handler'lariga qo'yiladi.
+    """
+    filt = _TransientNetworkFilter()
+    root = logging.getLogger()
+    if not root.handlers:
+        root.addHandler(logging.StreamHandler())
+    for h in root.handlers:
+        h.addFilter(filt)
+    for name in ("aiogram", "aiogram.dispatcher", "uvicorn", "uvicorn.error"):
+        for h in logging.getLogger(name).handlers:
+            h.addFilter(filt)
+
+
+_install_transient_filter()
 
 router = Router()
 
