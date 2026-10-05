@@ -131,6 +131,36 @@ async def api_admin_metrics(request: Request):
     }
 
 
+def _latest_daily_report() -> dict | None:
+    folder = os.path.join(config.BASE_DIR, "data", "reports")
+    try:
+        files = []
+        for name in os.listdir(folder):
+            if name.endswith(".json"):
+                path = os.path.join(folder, name)
+                files.append((os.path.getmtime(path), path))
+        if not files:
+            return None
+        files.sort(reverse=True)
+        _, path = files[0]
+        with open(path, encoding="utf-8") as f:
+            return {"path": os.path.basename(path), "data": json.load(f)}
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+
+
+@app.post("/api/admin/daily_report/latest")
+async def api_admin_latest_report(request: Request):
+    body = await _parse_body(request)
+    if body is None:
+        return JSONResponse({"ok": False, "error": "bad_request"}, status_code=400)
+    _user, err = await _admin_guard(body.get("initData", ""))
+    if err:
+        return err
+    report = await asyncio.to_thread(_latest_daily_report)
+    return {"ok": True, "report": report}
+
+
 # --- Simple in-memory rate limiter (token bucket per user/IP) ---
 _rate_buckets = defaultdict(lambda: {"tokens": 30.0, "last": time.time()})
 RATE_LIMIT = 30  # requests per minute
@@ -613,6 +643,17 @@ async def api_order(request: Request):
         order_id, err = await db.purchase(
             uid, game["id"], pkg["name"], str(pkg["amount"]), price, player_id, package_id
         )
+        if err == "duplicate" and order_id:
+            # Ikki marta bosilgan: balans ikkinchi marta ayirilmasin, yangi
+            # order yaratilmasin — mijozga xuddi shu order ko'rsatiladi.
+            fresh = await db.get_user(uid)
+            return {
+                "ok": True,
+                "order_id": order_id,
+                "duplicate": True,
+                "balance": fresh["balance"] if fresh else 0,
+                "message": "Bu buyurtma allaqachon berilgan — takrorlanmadi ✅",
+            }
         if not order_id:
             return {
                 "ok": True,
@@ -652,6 +693,24 @@ async def api_order(request: Request):
         return {"ok": True, "need_payment": True, "method": "stars", "message": "To'lov so'rovi chatga yuborildi. To'lab bo'lgach buyurtma bajariladi."}
 
     # manual methods (paynet / uzqr / card)
+    # Idempotency: 10 daqiqa ichida bir xil buyurtma kutilmoqda bo'lsa —
+    # yangisini yaratmaymiz (ikki marta bosishda 2 ta to'lov so'rovi chiqmasin).
+    dup = await db.find_recent_duplicate_order(uid, game["id"], package_id, player_id)
+    if dup:
+        existing_pay = await db.get_payment_by_ref(f"ord:{int(dup['id'])}")
+        return {
+            "ok": True,
+            "need_manual": True,
+            "duplicate": True,
+            "payment_id": int(existing_pay["id"]) if existing_pay else 0,
+            "order_id": int(dup["id"]),
+            "method": method,
+            "amount": price,
+            "instructions": "Bu buyurtma allaqachon rasmiylashtirilgan ✅",
+            "message": "Takrorlanmadi — avvalgi to'lov so'rovi ko'rsatildi.",
+            "support": f"@{config.get_settings().get('support_username') or 'donatefm_support'}",
+        }
+
     order_id = await db.create_order(
         uid, game["id"], pkg["name"], str(pkg["amount"]), price, player_id, package_id
     )

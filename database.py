@@ -335,8 +335,37 @@ async def create_order(user_id, platform, package_name, amount, price, game_id, 
         await conn.close()
 
 
+async def find_recent_duplicate_order(user_id, platform, package_id, game_id, method_hint="", minutes=10):
+    """Idempotency: bir xil xarid yaqinda yaratilganmi?
+
+    Ikki marta bosilganda (yoki Telegram update qayta yuborilganda) bir xil
+    order ikki marta yaratilmasligi kerak. Faqat hali 'kutilmoqda' holatdagi
+    orderlar hisobga olinadi — bajarilgan/rad etilgan order esa yangi xarid
+    deb qaraladi (mijoz qayta buyurtma qilmoqchi bo'lishi mumkin).
+    """
+    if not package_id:
+        return None
+    conn = await get_connection()
+    try:
+        since = (datetime.now() - timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
+        rows = await conn.execute_fetchall(
+            "SELECT id, price, status FROM orders WHERE user_id=? AND platform=?"
+            " AND package_id=? AND game_id=? AND status='kutilmoqda' AND created_at>=?"
+            " ORDER BY id DESC LIMIT 1",
+            (user_id, platform, package_id, game_id, since),
+        )
+        return rows[0] if rows else None
+    finally:
+        await conn.close()
+
+
 async def purchase(user_id, platform, package_name, amount, price, game_id, package_id=""):
     """Atomar xarid: balans ayirish + order yaratish. Muvaffaqiyatsiz — refund."""
+    # Idempotency: 10 daqiqa ichida bir xil xarid bo'lsa — yangisini yaratmaymiz.
+    dup = await find_recent_duplicate_order(user_id, platform, package_id, game_id)
+    if dup:
+        return int(dup["id"]), "duplicate"
+
     conn = await get_connection()
     try:
         await conn.execute("BEGIN IMMEDIATE")

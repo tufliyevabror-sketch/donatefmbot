@@ -662,6 +662,15 @@ async function chooseMethod(method) {
     return;
   }
   if (res.ok) {
+    if (res.duplicate) {
+      toast("ℹ️ " + res.message);
+      if (typeof res.balance === "number") {
+        state.user.balance = res.balance;
+        renderUser();
+      }
+      closePay();
+      return;
+    }
     toast("✅ " + res.message);
     if (res.player_name) {
       toast(`👤 ${wt("player_name")}: ${esc(res.player_name)}`);
