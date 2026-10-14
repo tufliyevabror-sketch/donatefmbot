@@ -14,11 +14,11 @@ from aiogram.types import (
     PreCheckoutQuery,
 )
 
+import animations
 import config
 import database as db
 import keyboards as kb
 import text as ls
-import animations
 from handlers.helpers import (
     _admin_ids_cache,
     _all_admin_ids,
@@ -215,7 +215,7 @@ async def topup_stars_amount(call: CallbackQuery):
     som = stars_to_som(stars)
     
     # Loading animation
-    msg = await call.message.edit_text(f"⭐️ <b>Stars to'lovi</b>\n\n⏳ <b>Invoice yaratilmoqda...</b> ", reply_markup=None)
+    msg = await call.message.edit_text("⭐️ <b>Stars to'lovi</b>\n\n⏳ <b>Invoice yaratilmoqda...</b> ", reply_markup=None)
     await asyncio.sleep(0.3)
     
     await call.message.answer_invoice(

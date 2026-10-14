@@ -53,7 +53,7 @@ def send(chat_id: int, text: str, retries: int = 3):
             if getattr(e, "code", 500) < 500:
                 raise
             last_err = e
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             last_err = e
         if attempt < retries - 1:
             time.sleep(10)

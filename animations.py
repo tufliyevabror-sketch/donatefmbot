@@ -4,12 +4,11 @@ animations.py — Silliq, chiroyli animatsiyalar va yumshoq UI effektilar.
 from __future__ import annotations
 
 import asyncio
-import random
-from typing import Optional, List
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.enums import ChatAction
+
 from aiogram import Bot
+from aiogram.enums import ChatAction
+from aiogram.types import InlineKeyboardMarkup, Message
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 # ============================================================
 # Animatsiya frameslari
@@ -60,11 +59,11 @@ class AnimationController:
         self,
         message: Message,
         bot: Bot,
-        frames: List[str],
+        frames: list[str],
         interval: float = 0.15,
         prefix: str = "",
         suffix: str = "",
-        parse_mode: Optional[str] = None,
+        parse_mode: str | None = None,
     ):
         self.message = message
         self.bot = bot
@@ -73,7 +72,7 @@ class AnimationController:
         self.prefix = prefix
         self.suffix = suffix
         self.parse_mode = parse_mode
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._running = False
         self._current_text = ""
     
@@ -130,7 +129,7 @@ class ProgressBar:
         empty_char: str = "▱",
         prefix: str = "",
         suffix: str = "",
-        parse_mode: Optional[str] = None,
+        parse_mode: str | None = None,
     ):
         self.message = message
         self.bot = bot
@@ -141,7 +140,7 @@ class ProgressBar:
         self.prefix = prefix
         self.suffix = suffix
         self.current = 0
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._running = False
     
     def _render_bar(self, current: int) -> str:
@@ -186,7 +185,7 @@ class TypingIndicator:
         self.bot = bot
         self.chat_id = chat_id
         self.interval = interval
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._running = False
     
     async def start(self) -> None:
@@ -222,7 +221,7 @@ class ToastNotification:
         message: Message,
         bot: Bot,
         duration: float = 3.0,
-        parse_mode: Optional[str] = None,
+        parse_mode: str | None = None,
     ):
         self.message = message
         self.bot = bot
@@ -260,7 +259,7 @@ class SmoothTransition:
         message: Message,
         new_text: str,
         delay: float = 0.03,
-        parse_mode: Optional[str] = None,
+        parse_mode: str | None = None,
     ) -> None:
         """Matnni harf-harf yozib ko'rsatish (typewriter effect)."""
         current = ""
@@ -330,7 +329,6 @@ class AnimatedKeyboard:
         interval: float = 0.3,
     ) -> None:
         """Tugmani pulsing (yo'naltirish) effekti."""
-        pass
 
 
 # ============================================================
@@ -341,7 +339,7 @@ async def show_loading(
     message: Message,
     bot: Bot,
     text: str = "Yuklanmoqda...",
-    duration: Optional[float] = None,
+    duration: float | None = None,
 ) -> AnimationController:
     """Yuklanish animatsiyasini ko'rsatish."""
     controller = AnimationController(
@@ -501,8 +499,8 @@ async def stagger_keyboard_reveal(
     delay: float = 0.12,
 ) -> None:
     """Tugmalarni stagger (kechiktirib) ko'rsatish."""
-    from aiogram.utils.keyboard import InlineKeyboardBuilder
     from aiogram.types import InlineKeyboardMarkup
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
     
     builder = InlineKeyboardBuilder()
     markup = InlineKeyboardMarkup(inline_keyboard=[])
@@ -521,7 +519,6 @@ async def keyboard_pulse_animation(
     pulse_count: int = 2,
 ) -> None:
     """Klaviatura pulsing effekti (placeholder)."""
-    pass
 
 
 # ============================================================
@@ -546,7 +543,6 @@ __all__ = [
     "animate_warning",
     "pulse_text",
     "countdown_animation",
-    "pulse_text",
     "stagger_keyboard_reveal",
     "keyboard_pulse_animation",
     # Frames

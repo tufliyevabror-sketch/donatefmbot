@@ -3,13 +3,10 @@
 tekshiriladi: /health, /api/init'ning initData validatsiyasi,
 himoya endpoint'lari (banned/maintenance), soxta cheq tekshiruvi mantiqi.
 """
-import json
 import sys
-from unittest.mock import AsyncMock, patch
 
 sys.path.insert(0, "/home/abror69/donatefmbot")
 
-import config
 import server
 
 BASE = "/home/abror69/donatefmbot"

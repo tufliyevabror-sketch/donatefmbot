@@ -98,7 +98,7 @@ async def main():
     assert dup_other is None, "boshqa user uchun duplicate topildi"
     print("  OK  boshqa foydalanuvchining orderi aralashmaydi")
 
-    print(f"\nBARCHA IDEMPOTENCY TESTLARI O'TDI ({len((await db.get_user_orders(uid, 50)))} ta order yaratildi)")
+    print(f"\nBARCHA IDEMPOTENCY TESTLARI O'TDI ({len(await db.get_user_orders(uid, 50))} ta order yaratildi)")
 
 
 if __name__ == "__main__":

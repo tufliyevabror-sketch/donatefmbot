@@ -8,10 +8,10 @@ from datetime import datetime
 
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
+from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from aiogram.types import (
     CallbackQuery,
     ErrorEvent,
@@ -25,6 +25,7 @@ from aiogram.types import (
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+import animations
 import catalog
 import config
 import database as db
@@ -33,7 +34,6 @@ import keyboards as kb
 import order_notify
 import services
 import text as ls
-import animations
 from handlers.helpers import (
     _admin_ids_cache,
     _client_line,

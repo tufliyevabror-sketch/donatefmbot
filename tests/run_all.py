@@ -8,7 +8,6 @@ import asyncio
 import importlib.util
 import inspect
 import sys
-import traceback
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
