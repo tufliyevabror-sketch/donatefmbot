@@ -34,7 +34,6 @@ import order_notify
 import services
 import text as ls
 import animations
-import animations
 from handlers.helpers import (
     _admin_ids_cache,
     _client_line,

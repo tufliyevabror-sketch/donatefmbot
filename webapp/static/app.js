@@ -1729,7 +1729,7 @@ async function loadAdminUsers(content) {
   if (!res.ok) return (content.innerHTML = emptyHtml("⚠️", wt("err_generic"), wt("err_load")));
   content.innerHTML = `
     <div class="admin-search">
-      <input type="text" id="admin-search-input" placeholder="${wt("search_ph")}" onkeydown="if(event.key==='Enter')adminSearch()">
+      <input type="text" id="admin-search-input" placeholder="${wt("admin_search_ph")}" onkeydown="if(event.key==='Enter')adminSearch()">
       <button class="mini-btn" onclick="adminSearch()">${wt("search_btn")}</button>
     </div>
     <div id="admin-users-list"></div>`;

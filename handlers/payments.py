@@ -1,4 +1,5 @@
 """To'lov handlerlari: topup, chek qabul, Telegram Stars — bot.py dan ko'chirildi (faza 3b)."""
+import asyncio
 import base64
 from datetime import datetime, timedelta
 

@@ -7,6 +7,7 @@ import asyncio
 import random
 from typing import Optional, List
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.enums import ChatAction
 from aiogram import Bot
 
