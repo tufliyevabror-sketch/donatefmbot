@@ -5,12 +5,13 @@ import hmac
 import json
 import logging
 import os
+import re as _re
 import time
 from collections import defaultdict
 from urllib.parse import parse_qsl
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
@@ -1029,6 +1030,53 @@ async def api_favorites(request: Request):
     return {"ok": True, "active": active, "favorites": favorites}
 
 
+REVIEWS_DIR = os.path.join(config.BASE_DIR, "data", "reviews")
+_REVIEW_FNAME_RE = _re.compile(r"^r\d+_[0-9a-f]{10}\.(jpg|png|webp)$")
+_REVIEW_PHOTO_MAX = 3 * 1024 * 1024  # 3 MB
+
+
+def _save_review_photo(order_id, data_url):
+    """Base64 dataURL ni data/reviews/ ga yozadi — fayl nomini qaytaradi (xatolikda '')."""
+    try:
+        os.makedirs(REVIEWS_DIR, exist_ok=True)
+        raw = str(data_url or "")
+        if raw.startswith("data:"):
+            marker = "base64,"
+            idx = raw.find(marker)
+            if idx < 0:
+                return ""
+            raw = raw[idx + len(marker):]
+        data = base64.b64decode(raw, validate=False)
+        if not data or len(data) > _REVIEW_PHOTO_MAX:
+            return ""
+        if data[:3] == b"\xff\xd8\xff":
+            ext = "jpg"
+        elif data[:8] == b"\x89PNG\r\n\x1a\n":
+            ext = "png"
+        elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            ext = "webp"
+        else:
+            return ""
+        fname = f"r{int(order_id)}_{os.urandom(5).hex()}.{ext}"
+        with open(os.path.join(REVIEWS_DIR, fname), "wb") as f:
+            f.write(data)
+        return fname
+    except Exception:
+        logger.warning("review photo saqlanmadi")
+        return ""
+
+
+@app.get("/reviews/{fname}")
+async def serve_review_photo(fname: str):
+    if not _REVIEW_FNAME_RE.match(fname):
+        return JSONResponse({"ok": False}, status_code=404)
+    path = os.path.join(REVIEWS_DIR, fname)
+    if not os.path.isfile(path):
+        return JSONResponse({"ok": False}, status_code=404)
+    media = {"jpg": "image/jpeg", "png": "image/png", "webp": "image/webp"}[fname.rsplit(".", 1)[1]]
+    return FileResponse(path, media_type=media, headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.post("/api/rate")
 async def api_rate(request: Request):
     body = await _parse_body(request)
@@ -1042,10 +1090,51 @@ async def api_rate(request: Request):
         stars = int(body.get("stars", 0))
     except (TypeError, ValueError):
         return JSONResponse({"ok": False, "error": "params"}, status_code=400)
-    ok, info = await db.set_order_rating(order_id, user["id"], stars, str(body.get("review", "")))
+    review = str(body.get("review", "")).strip()[:500]
+    photo = ""
+    photo_raw = body.get("photo")
+    if photo_raw:
+        if len(str(photo_raw)) > _REVIEW_PHOTO_MAX * 2:
+            return {"ok": False, "error": "too_big", "message": "Rasm hajmi juda katta."}
+        photo = _save_review_photo(order_id, str(photo_raw))
+        if not photo:
+            return {"ok": False, "error": "photo", "message": "Rasm qabul qilinmadi."}
+    ok, info = await db.set_order_rating(order_id, user["id"], stars, review, photo)
     if not ok:
         return {"ok": False, "error": info, "message": info}
     return {"ok": True, "stars": info, "message": f"Rahmat! {info}⭐️ qabul qilindi."}
+
+
+@app.post("/api/reviews")
+async def api_reviews(request: Request):
+    body = await _parse_body(request)
+    if body is None:
+        return JSONResponse({"ok": False, "error": "bad_request"}, status_code=400)
+    user, _db_user = await get_user_full(body.get("initData", ""))
+    if not user:
+        return JSONResponse({"ok": False, "error": "init_data"}, status_code=400)
+    game_id = str(body.get("game_id", "")).strip()
+    if not game_id or len(game_id) > 64:
+        return JSONResponse({"ok": False, "error": "params"}, status_code=400)
+    rows = await db.list_game_reviews(game_id, 30)
+    aggregate = await db.get_game_rating(game_id)
+    reviews = []
+    for r in rows:
+        name = (r["full_name"] or "").strip()
+        parts = name.split()
+        if parts:
+            author = parts[0] + (" " + parts[1][0] + "." if len(parts) > 1 and parts[1] else "")
+        else:
+            author = (r["username"] or "").strip() or "User"
+        reviews.append({
+            "order_id": r["order_id"],
+            "stars": r["stars"],
+            "review": r["review"] or "",
+            "photo": r["photo"] or "",
+            "created_at": r["created_at"],
+            "author": author,
+        })
+    return {"ok": True, "reviews": reviews, "avg": round(aggregate["avg"] or 0, 1), "count": aggregate["count"]}
 
 
 @app.post("/api/notifications")
@@ -1146,6 +1235,38 @@ async def api_reorder(request: Request):
         "balance": fresh["balance"] if fresh else 0,
         "message": f"Buyurtma #{new_id} qabul qilindi! 😊",
     }
+
+
+@app.post("/api/last_order")
+async def api_last_order(request: Request):
+    body = await _parse_body(request)
+    if body is None:
+        return JSONResponse({"ok": False, "error": "bad_request"}, status_code=400)
+    user, db_user = await get_user_full(body.get("initData", ""))
+    if not user:
+        return JSONResponse({"ok": False, "error": "init_data"}, status_code=400)
+    if db_user and "is_banned" in db_user and db_user["is_banned"]:
+        return {"ok": False, "error": "banned", "message": "Siz bloklangansiz."}
+    game_id = str(body.get("game_id", "")).strip()
+    if not game_id or len(game_id) > 64:
+        return JSONResponse({"ok": False, "error": "params"}, status_code=400)
+    orders = await db.get_user_orders(user["id"], 50)
+    for o in orders:
+        if (
+            o["platform"] == game_id
+            and o.get("package_id")
+            and o["status"] in ("bajarildi", "kutilmoqda", "to'lov_kutilmoqda")
+        ):
+            return {
+                "ok": True,
+                "order": {
+                    "id": o["id"],
+                    "package_name": o["package_name"],
+                    "price": o["price"],
+                    "player_id": o["game_id"],
+                },
+            }
+    return {"ok": True, "order": None}
 
 
 @app.post("/api/admin/chart")

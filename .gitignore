@@ -16,3 +16,5 @@ ruff_cache/
 data/settings.json
 data/settings.json.lock
 data/.last_report
+data/reports/
+data/reviews/

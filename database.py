@@ -21,12 +21,37 @@ def _row_factory(cursor, row):
     return DBRow(zip([c[0] for c in cursor.description], row))
 
 
+_shared: aiosqlite.Connection | None = None
+
+
+class _SharedConn:
+    """Bitta persistent (WAL) ulanish — har funksiyada yangi gacha bo'lgan 88 ta
+    `aiosqlite.connect()` o'rniga. `close()` real yopilish emas (saqlanadi).
+    Hamma kod bitta event-loop'da ishlagani uchun aiosqlite xavfsiz."""
+    __slots__ = ("_c",)
+
+    def __init__(self, conn: aiosqlite.Connection):
+        object.__setattr__(self, "_c", conn)
+
+    def __getattr__(self, item):
+        return getattr(object.__getattribute__(self, "_c"), item)
+
+    def __setattr__(self, key, value):
+        object.__setattr__(object.__getattribute__(self, "_c"), key, value)
+
+    async def close(self) -> None:
+        return None  # MAX SPEED: ulanishni yopmang — keyingi so'rovda qayta qo'llanadi
+
+
 async def get_connection():
-    conn = await aiosqlite.connect(DB_PATH, timeout=15)
-    conn.row_factory = _row_factory
-    await conn.execute("PRAGMA journal_mode=WAL")
-    await conn.execute("PRAGMA busy_timeout=10000")
-    return conn
+    global _shared
+    if _shared is None:
+        conn = await aiosqlite.connect(DB_PATH, timeout=15)
+        conn.row_factory = _row_factory
+        await conn.execute("PRAGMA journal_mode=WAL")
+        await conn.execute("PRAGMA busy_timeout=10000")
+        _shared = conn
+    return _SharedConn(_shared)
 
 
 async def init_db():
@@ -124,6 +149,32 @@ async def init_db():
             created_at TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS gift_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT UNIQUE NOT NULL,
+            amount INTEGER NOT NULL,
+            buyer_id INTEGER NOT NULL,
+            recipient_id INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'available', -- available, redeemed, expired
+            created_at TEXT,
+            redeemed_at TEXT DEFAULT '',
+            expires_at TEXT DEFAULT ''
+        );
+
+        CREATE TABLE IF NOT EXISTS auto_donate (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            amount INTEGER NOT NULL,
+            frequency TEXT NOT NULL, -- monthly, weekly
+            next_run TEXT NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            payment_method TEXT DEFAULT 'balance', -- balance, card, stars
+            card_last4 TEXT DEFAULT '',
+            created_at TEXT,
+            last_run TEXT DEFAULT '',
+            fails INTEGER DEFAULT 0
+        );
+
         CREATE TABLE IF NOT EXISTS favorites (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
@@ -165,6 +216,7 @@ async def init_db():
     await add_column_if_missing(conn, "users", "pro_until", "TEXT DEFAULT ''")
     await add_column_if_missing(conn, "users", "pro_notified", "INTEGER DEFAULT 0")
     await add_column_if_missing(conn, "orders", "rating", "INTEGER DEFAULT 0")
+    await add_column_if_missing(conn, "ratings", "photo", "TEXT DEFAULT ''")
     await add_column_if_missing(conn, "payments", "chek", "INTEGER DEFAULT 0")
     await add_column_if_missing(conn, "payments", "reminded", "INTEGER DEFAULT 0")
     await add_column_if_missing(conn, "payments", "file_uid", "TEXT DEFAULT ''")
@@ -768,6 +820,53 @@ async def get_stats():
             "month_users": month_users, "month_new_users": month_new_users,
             "month_revenue": month_revenue, "month_topups": month_topups,
         }
+    finally:
+        await conn.close()
+
+
+async def daily_stats(days=7):
+    """Oxirgi N kun: buyurtmalar, tushum, to'ldirilgan summa, yangi userlar.
+
+    Har kun uchun qator (bo'sh kunlar 0 bilan) — /trend buyrug'i uchun.
+    """
+    conn = await get_connection()
+    try:
+        since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+        orders = await conn.execute_fetchall(
+            "SELECT substr(created_at,1,10) AS d, COUNT(*) AS c,"
+            " COALESCE(SUM(price),0) AS r FROM orders"
+            " WHERE status='bajarildi' AND created_at>=? GROUP BY d",
+            (since,),
+        )
+        topups = await conn.execute_fetchall(
+            "SELECT substr(created_at,1,10) AS d, COUNT(*) AS c,"
+            " COALESCE(SUM(amount),0) AS s FROM payments"
+            " WHERE status='tasdiqlandi' AND created_at>=? GROUP BY d",
+            (since,),
+        )
+        new_users = await conn.execute_fetchall(
+            "SELECT substr(reg_date,1,10) AS d, COUNT(*) AS c FROM users"
+            " WHERE reg_date>=? GROUP BY d",
+            (since,),
+        )
+        by_day = {}
+        today = datetime.now().date()
+        for i in range(days):
+            d = (today - timedelta(days=days - 1 - i)).strftime("%Y-%m-%d")
+            by_day[d] = {"d": d, "orders": 0, "revenue": 0,
+                         "topups": 0, "topup_sum": 0, "new_users": 0}
+        for row in orders:
+            if row["d"] in by_day:
+                by_day[row["d"]]["orders"] = int(row["c"])
+                by_day[row["d"]]["revenue"] = int(row["r"])
+        for row in topups:
+            if row["d"] in by_day:
+                by_day[row["d"]]["topups"] = int(row["c"])
+                by_day[row["d"]]["topup_sum"] = int(row["s"])
+        for row in new_users:
+            if row["d"] in by_day:
+                by_day[row["d"]]["new_users"] = int(row["c"])
+        return [by_day[d] for d in sorted(by_day)]
     finally:
         await conn.close()
 
@@ -1443,7 +1542,7 @@ async def is_favorite(user_id, game_id, package_id=""):
 
 
 # ==================== RATINGS ====================
-async def set_order_rating(order_id, user_id, stars, review=""):
+async def set_order_rating(order_id, user_id, stars, review="", photo=""):
     stars = max(1, min(5, int(stars or 0)))
     conn = await get_connection()
     try:
@@ -1452,10 +1551,12 @@ async def set_order_rating(order_id, user_id, stars, review=""):
             return False, "Topilmadi"
         if o[0]["status"] != "bajarildi":
             return False, "Faqat bajarilgan buyurtmani baholash mumkin"
+        old = await conn.execute_fetchall("SELECT photo FROM ratings WHERE order_id = ?", (order_id,))
+        prev_photo = (old[0]["photo"] if old else "") or ""
         await conn.execute("DELETE FROM ratings WHERE order_id = ?", (order_id,))
         await conn.execute(
-            "INSERT INTO ratings (order_id, user_id, stars, review, created_at) VALUES (?, ?, ?, ?, ?)",
-            (order_id, user_id, stars, (review or "")[:500], now_str()),
+            "INSERT INTO ratings (order_id, user_id, stars, review, photo, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (order_id, user_id, stars, (review or "")[:500], (photo or prev_photo)[:120], now_str()),
         )
         await conn.execute("UPDATE orders SET rating = ? WHERE id = ?", (stars, order_id))
         await conn.commit()
@@ -1480,10 +1581,48 @@ async def get_user_ratings(user_id):
     conn = await get_connection()
     try:
         rows = await conn.execute_fetchall(
-            "SELECT order_id, stars, review, created_at FROM ratings WHERE user_id = ? ORDER BY id DESC LIMIT 20",
+            "SELECT order_id, stars, review, photo, created_at FROM ratings WHERE user_id = ? ORDER BY id DESC LIMIT 20",
             (user_id,),
         )
         return rows
+    finally:
+        await conn.close()
+
+
+async def list_game_reviews(game_id, limit=30):
+    """Bajarilgan buyurtmalarning sharhlari (omshon: birinchi isim)."""
+    conn = await get_connection()
+    try:
+        rows = await conn.execute_fetchall(
+            """
+            SELECT r.order_id, r.stars, r.review, r.photo, r.created_at,
+                   u.username, u.full_name
+            FROM ratings r
+            JOIN orders o ON o.id = r.order_id
+            LEFT JOIN users u ON u.user_id = r.user_id
+            WHERE o.platform = ? AND o.status = 'bajarildi'
+              AND (r.review != '' OR r.photo != '')
+            ORDER BY r.id DESC LIMIT ?
+            """,
+            (game_id, min(limit, 100)),
+        )
+        return rows
+    finally:
+        await conn.close()
+
+
+async def get_game_rating(game_id):
+    conn = await get_connection()
+    try:
+        row = (await conn.execute_fetchall(
+            """
+            SELECT AVG(r.stars) as a, COUNT(*) as c
+            FROM ratings r JOIN orders o ON o.id = r.order_id
+            WHERE o.platform = ? AND o.status = 'bajarildi'
+            """,
+            (game_id,),
+        ))[0]
+        return {"avg": row["a"] or 0, "count": row["c"] or 0}
     finally:
         await conn.close()
 

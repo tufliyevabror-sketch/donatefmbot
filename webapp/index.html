@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/static/style.css?v=20261001g">
+  <link rel="stylesheet" href="/static/style.css?v=20261013a">
 </head>
 <body>
   <div class="bg-aurora" aria-hidden="true"></div>
@@ -72,14 +72,42 @@
       </header>
       <div class="game-content">
         <div class="saved-ids" id="saved-ids"></div>
+        <div class="repeat-bar" id="repeat-bar" style="display:none">
+          <div class="rb-info">
+            <div class="rb-label" data-i18n="repeat_last">🔁 Oxirgi buyurtmani takrorlash</div>
+            <div class="rb-sub" id="repeat-sub">—</div>
+          </div>
+          <button class="rb-btn" id="repeat-btn" onclick="repeatLastOrder()">🔁</button>
+        </div>
         <div class="id-input-row">
           <input type="text" id="player-id" data-i18n-ph="enter_id" placeholder="O'yin ID kiriting" autocomplete="off" inputmode="text">
           <button class="verify-btn" id="verify-btn" onclick="verifyId()" data-i18n="verify">Tekshirish</button>
         </div>
         <div class="verify-result" id="verify-result"></div>
+        <div class="pkg-search-row">
+          <span class="pkg-search-ico">🔍</span>
+          <input type="text" id="pkg-search" data-i18n-ph="search_ph" placeholder="Mahsulot qidirish..." autocomplete="off" oninput="onPkgSearch()">
+          <button class="pkg-search-clear" id="pkg-search-clear" onclick="clearPkgSearch()" style="display:none">✕</button>
+        </div>
+        <div class="pkg-sort-tabs" id="pkg-sort-tabs">
+          <button class="seg-sort active" data-sort="default" onclick="setPkgSort('default')" data-i18n="sort_default">Standart</button>
+          <button class="seg-sort" data-sort="cheap" onclick="setPkgSort('cheap')" data-i18n="sort_cheap">Arzon</button>
+          <button class="seg-sort" data-sort="expensive" onclick="setPkgSort('expensive')" data-i18n="sort_expensive">Qimmat</button>
+        </div>
+        <div class="pkg-price-row">
+          <input type="text" id="pkg-min" data-i18n-ph="price_from" placeholder="dan (so'm)" inputmode="numeric" oninput="onPkgPrice()">
+          <span class="pkg-price-dash">—</span>
+          <input type="text" id="pkg-max" data-i18n-ph="price_to" placeholder="gacha (so'm)" inputmode="numeric" oninput="onPkgPrice()">
+        </div>
         <div class="cat-tabs" id="cat-tabs" style="display:none"></div>
         <h2 class="section-title" data-i18n="products">MAHSULOTNI TANLANG</h2>
         <div class="games-grid products-grid" id="products-grid"></div>
+        <div class="empty-state" id="products-filter-empty" style="display:none">
+          <span class="empty-emoji">🔍</span>
+          <div class="empty-title" data-i18n="prod_filter_t">Hech narsa topilmadi</div>
+          <div class="empty-text" data-i18n="prod_filter_d">Boshqa kalit so'z yoki narx oralig'ini sinab ko'ring.</div>
+          <button class="empty-cta" onclick="resetPkgFilters()"><span>🔄</span> <span data-i18n="reset_filters">Filtrni tozalash</span></button>
+        </div>
         <div class="empty-state" id="products-empty" style="display:none">
           <span class="empty-emoji">📦</span>
           <div class="empty-title" data-i18n="prod_empty_t">Mahsulot yo'q</div>
@@ -380,6 +408,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=20261001g"></script>
+  <script src="/static/app.js?v=20261013a"></script>
 </body>
 </html>

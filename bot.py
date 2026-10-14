@@ -11,6 +11,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from aiogram.types import (
     CallbackQuery,
     ErrorEvent,
@@ -32,6 +33,8 @@ import keyboards as kb
 import order_notify
 import services
 import text as ls
+import animations
+import animations
 from handlers.helpers import (
     _admin_ids_cache,
     _client_line,
@@ -100,6 +103,47 @@ def _install_transient_filter():
 _install_transient_filter()
 
 router = Router()
+
+
+# ================== FLOOD FILTRI ==================
+# 10 soniyada 8+ xabar -> 5 soniya sabotaj + ogohlantirish (adminlar chetlab o'tadi)
+_flood_hits: dict = {}
+_flood_warn: dict = {}
+_FLOOD_WINDOW = 10.0
+_FLOOD_LIMIT = 8
+_FLOOD_MUTE = 5.0
+
+
+class FloodMiddleware(BaseMiddleware):
+    """Tez-tez yuborishni vaqtincha cheklaydi."""
+
+    async def __call__(self, handler, event, data):
+        user = getattr(event, "from_user", None)
+        if user is None or is_admin(user.id):
+            return await handler(event, data)
+        now = time.monotonic()
+        hits = _flood_hits.setdefault(user.id, [])
+        hits[:] = [t for t in hits if now - t < _FLOOD_WINDOW]
+        if len(hits) >= _FLOOD_LIMIT:
+            last_warn = _flood_warn.get(user.id, 0.0)
+            if now - last_warn > _FLOOD_MUTE:
+                _flood_warn[user.id] = now
+                try:
+                    if event.__class__.__name__ == "CallbackQuery":
+                        await event.answer(
+                            "⏳ Juda tez yuboryapsiz! Biroz kuting…",
+                            show_alert=True,
+                        )
+                    else:
+                        await event.answer("⏳ Juda tez yuboryapsiz! Biroz kuting…")
+                except Exception:
+                    pass
+            return  # handlerni chaqirmaymiz
+        hits.append(now)
+        if len(_flood_hits) > 50000:
+            _flood_hits.clear()
+            _flood_warn.clear()
+        return await handler(event, data)
 
 
 
@@ -388,6 +432,33 @@ async def cmd_stats(message: Message):
     )
     await message.answer(text)
 
+
+@router.message(Command("trend"))
+async def cmd_trend(message: Message):
+    """Oxirgi 7 kun: buyurtmalar va tushum grafigi (faqat admin)."""
+    if not is_admin(message.from_user.id):
+        return
+    rows = await db.daily_stats(7)
+    lines = ["📈 <b>Oxirgi 7 kun</b>", ""]
+    mx_o = max((r["orders"] for r in rows), default=0) or 1
+    mx_r = max((r["revenue"] for r in rows), default=0) or 1
+    lines.append("📦 Buyurtmalar:")
+    for r in rows:
+        bar = "█" * max(1, round(r["orders"] * 18 / mx_o)) if r["orders"] else "░"
+        lines.append(f"• {r['d']}: <b>{r['orders']}</b> {bar}")
+    lines.append("\n💰 Tushum (so'm):")
+    for r in rows:
+        bar = "█" * max(1, round(r["revenue"] * 18 / mx_r)) if r["revenue"] else "░"
+        lines.append(f"• {r['d']}: <b>{ls.money(r['revenue'])}</b> {bar}")
+    tot_o = sum(r["orders"] for r in rows)
+    tot_r = sum(r["revenue"] for r in rows)
+    tot_u = sum(r["new_users"] for r in rows)
+    lines.append(
+        f"\n📊 Jami: <b>{tot_o}</b> buyurtma · <b>{ls.money(tot_r)}</b> so'm"
+        f" · <b>{tot_u}</b> yangi user"
+    )
+    await message.answer("\n".join(lines))
+
 @router.message(Command("promo"))
 async def promo_cmd(message: Message):
     user = await db.get_user(message.from_user.id)
@@ -437,6 +508,12 @@ from handlers.catalog import router as catalog_router
 # ================== BALANCE / TOPUP ==================
 # (faza 3b: handlers/payments.py ga ko'chirildi)
 from handlers.payments import router as payments_router
+
+# Flood filtri barcha sibling routerlarga (har bir hodisa bittasiga kiradi)
+for _mw_router in (start_router, catalog_router, payments_router, router):
+    _mw_router.message.middleware(FloodMiddleware())
+    _mw_router.callback_query.middleware(FloodMiddleware())
+del _mw_router
 
 
 async def _verify_player_nickname(game_id, player_id):
@@ -907,7 +984,11 @@ async def admin_pay_ok(call: CallbackQuery):
         return
     late = p["status"] == "rad_etildi"
     late_note = "\n<i>(Muddati o'tgan edi — kech tasdiqlandi)</i>" if late else ""
-
+    
+    # Loading animation
+    await call.message.edit_text("⏳ <b>To'lov tasdiqlanmoqda...</b> ", reply_markup=None)
+    await asyncio.sleep(0.3)
+    
     # Buyurtma bilan bog'liq to'lov (ref = ord:{order_id})
     if p["ref"] and p["ref"].startswith("ord:"):
         order_id = int(p["ref"].split(":")[1])
@@ -937,10 +1018,8 @@ async def admin_pay_ok(call: CallbackQuery):
                 )
             except Exception:
                 pass
-        await safe_edit(call.message, 
-            f"✅ To'lov #{payment_id} tasdiqlandi. Buyurtma #{order_id} kutilmoqda."
-            + late_note,
-            reply_markup=kb.admin_menu_kb(),
+        await animations.animate_success(call.message, 
+            f"✅ To'lov #{payment_id} tasdiqlandi. Buyurtma #{order_id} kutilmoqda." + late_note
         )
         await call.answer("Tasdiqlandi ✅")
         return
@@ -959,10 +1038,8 @@ async def admin_pay_ok(call: CallbackQuery):
         )
     except Exception:
         pass
-    await safe_edit(call.message, 
-        f"✅ To'lov #{payment_id} tasdiqlandi, "
-        f"{format_price(p['amount'])} so'm qo'shildi." + late_note,
-        reply_markup=kb.admin_menu_kb(),
+    await animations.animate_success(call.message, 
+        f"✅ To'lov #{payment_id} tasdiqlandi. Foydalanuvchi balansiga <b>{format_price(p['amount'])} so'm</b> qo'shildi." + late_note
     )
     await call.answer("Tasdiqlandi ✅")
 
@@ -2738,8 +2815,11 @@ async def run_bot():
         kwargs["session"] = session
     bot = Bot(**kwargs)
     dp = Dispatcher()
-    if router.parent_router is not None:
-        router._parent_router = None
+    # Qayta ishga tushirishda (retry) barcha routerlar eski parent'dan
+    # ajratilishi shunki, aks holda "Router is already attached" xatosi chiqadi.
+    for _r in (start_router, catalog_router, payments_router, router):
+        if _r.parent_router is not None:
+            _r._parent_router = None
     # Muhim: aniq handlerlar (start/katalog) catch-all F.text dan OLDIN tekshiriladi.
     # Aks holda /start kabi buyruqlar unified text_handler'ga yutilib ketadi.
     dp.include_router(start_router)

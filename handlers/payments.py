@@ -17,6 +17,7 @@ import config
 import database as db
 import keyboards as kb
 import text as ls
+import animations
 from handlers.helpers import (
     _admin_ids_cache,
     _all_admin_ids,
@@ -46,6 +47,9 @@ async def topup_menu(call: CallbackQuery):
 @router.callback_query(F.data == "topup:card")
 async def topup_card(call: CallbackQuery):
     if not await _ensure_not_banned(call): return
+    # Loading animation
+    await call.message.edit_text("💳 <b>Karta to'lovi</b>\n\n⏳ <b>Summalar yuklanmoqda...</b> ", reply_markup=None)
+    await asyncio.sleep(0.3)
     await safe_edit(call.message,
         "💳 <b>Karta orqali to'lov</b>\n\n"
         "Summani tanlang yoki o'zingiz yozing:",
@@ -133,8 +137,19 @@ async def topup_manual_card_pick(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     photo_id = data.get("manual_photo")
     await state.clear()
+    
+    # Loading animation
+    msg = await call.message.edit_text("⏳ <b>To'lov yaratilmoqda...</b> ", reply_markup=None)
+    await asyncio.sleep(0.3)
+    
     payment_id = await db.create_payment(call.from_user.id, "karta", 0, "", chek=1)
     client = await _client_line(call.from_user.id, "👤 Foydalanuvchi")
+    verdict = await _ocr_verdict(call.message.bot, photo_id, 0) if photo_id else ""
+    
+    # Animate success
+    await animations.animate_success(msg, f"✅ To'lov yaratildi! <code>#{payment_id}</code>")
+    await asyncio.sleep(0.5)
+    
     verdict = await _ocr_verdict(call.message.bot, photo_id, 0) if photo_id else ""
     for admin_id in await _all_admin_ids():
         try:
@@ -148,8 +163,8 @@ async def topup_manual_card_pick(call: CallbackQuery, state: FSMContext):
                             f"{client}\n"
                             f"💰 Summa: noma'lum (foydalanuvchi chek yubordi)"
                             f"{verdict}",
-                    reply_markup=kb.confirm_topup_kb(payment_id),
-                )
+                        reply_markup=kb.confirm_topup_kb(payment_id),
+                    )
             else:
                 await call.message.bot.send_message(
                     admin_id,
@@ -197,6 +212,11 @@ async def topup_stars_amount(call: CallbackQuery):
     if not await _ensure_not_banned(call): return
     stars = int(call.data.split(":")[1])
     som = stars_to_som(stars)
+    
+    # Loading animation
+    msg = await call.message.edit_text(f"⭐️ <b>Stars to'lovi</b>\n\n⏳ <b>Invoice yaratilmoqda...</b> ", reply_markup=None)
+    await asyncio.sleep(0.3)
+    
     await call.message.answer_invoice(
         title="Hisobni to'ldirish (Stars)",
         description=(
@@ -208,6 +228,7 @@ async def topup_stars_amount(call: CallbackQuery):
         prices=[LabeledPrice(label="XTR", amount=stars)],
         provider_token="",
     )
+    await animations.animate_success(call.message, f"✅ Invoice yuborildi! {stars} ⭐️ Stars")
     await call.answer()
 
 
@@ -489,6 +510,13 @@ async def successful_payment(message: Message):
     payload = message.successful_payment.invoice_payload
     charge_id = message.successful_payment.telegram_payment_charge_id
 
+    # Loading animation
+    msg = await message.answer("⏳ <b>To'lov tasdiqlanmoqda...</b> ")
+    await asyncio.sleep(0.5)
+    
+    payload = message.successful_payment.invoice_payload
+    charge_id = message.successful_payment.telegram_payment_charge_id
+
     # topup:{amount_som}
     if payload.startswith("topup:"):
         amount = int(payload.split(":")[1])
@@ -501,10 +529,7 @@ async def successful_payment(message: Message):
             row = await db.get_payment_by_ref(charge_id)
             payment_id = row["id"] if row else 0
             await _notify_stars_topup(message.bot, message.from_user.id, amount, payment_id)
-        await message.answer(
-            f"✅ To'lov qabul qilindi! Balansingiz: "
-            f"<b>{format_price((await db.get_user(message.from_user.id))['balance'])} so'm</b>. 🎉"
-        )
+        await animations.animate_success(msg, f"✅ To'lov qabul qilindi! Balansingiz: <b>{format_price((await db.get_user(message.from_user.id))['balance'])} so'm</b>. 🎉")
         return
 
     # legacy topup_stars:{stars}
@@ -517,12 +542,10 @@ async def successful_payment(message: Message):
             row = await db.get_payment_by_ref(charge_id)
             payment_id = row["id"] if row else 0
             await _notify_stars_topup(message.bot, message.from_user.id, som, payment_id, stars)
-        await message.answer(
-            ls.balance_after_topup_text(
-                (await db.get_user(message.from_user.id))["balance"],
-                _lang(message)
-            )
-        )
+        await animations.animate_success(msg, ls.balance_after_topup_text(
+            (await db.get_user(message.from_user.id))["balance"],
+            _lang(message)
+        ))
         return
 
     # buy:{game_id}:{package_id}:{b64_player_id}

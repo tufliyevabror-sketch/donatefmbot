@@ -85,6 +85,10 @@ let state = {
   theme: "dark",
   gameIsFav: false,
   homeGameFilter: "all",
+  pkgSearch: "",
+  pkgSort: "default",
+  pkgMin: "",
+  pkgMax: "",
 };
 
 const fmt = (v) => Number(v || 0).toLocaleString("ru-RU").replace(/,/g, " ");
@@ -454,7 +458,9 @@ async function openGame(gameId) {
   state.activeCat = "all";
   state.gameIsFav = state.favorites.some(f => f.game_id === gameId);
   state.backStack = ["view-home"];
+  resetPkgFilters(true);
   openView("view-game");
+  loadLastOrder(gameId);
 }
 
 function renderGame() {
@@ -505,14 +511,26 @@ function renderGame() {
 
   const grid = document.getElementById("products-grid");
   const empty = document.getElementById("products-empty");
+  const filterEmpty = document.getElementById("products-filter-empty");
   grid.innerHTML = "";
   grid.classList.add("stagger-list");
-  const packages = state.activeCat !== "all" ? g.packages.filter((p) => p.category === state.activeCat) : g.packages;
+  let packages = state.activeCat !== "all" ? g.packages.filter((p) => p.category === state.activeCat) : g.packages.slice();
+  const q = (state.pkgSearch || "").trim().toLowerCase();
+  if (q) packages = packages.filter(p => (p.name || "").toLowerCase().includes(q));
+  const minP = Number(String(state.pkgMin).replace(/[^\d]/g, "")) || 0;
+  const maxP = Number(String(state.pkgMax).replace(/[^\d]/g, "")) || 0;
+  if (minP) packages = packages.filter(p => p.price >= minP);
+  if (maxP) packages = packages.filter(p => p.price <= maxP);
+  if (state.pkgSort === "cheap") packages.sort((a, b) => a.price - b.price);
+  else if (state.pkgSort === "expensive") packages.sort((a, b) => b.price - a.price);
+  const filterActive = !!(q || minP || maxP || state.pkgSort !== "default");
   if (!packages.length) {
     grid.innerHTML = "";
-    if (empty) empty.style.display = "block";
+    if (empty) empty.style.display = filterActive ? "none" : "block";
+    if (filterEmpty) filterEmpty.style.display = filterActive ? "block" : "none";
   } else {
     if (empty) empty.style.display = "none";
+    if (filterEmpty) filterEmpty.style.display = "none";
     packages.forEach((p) => {
       const el = document.createElement("div");
       el.className = "product-card" + (g.grid_mode ? " grid" : "");
@@ -563,6 +581,61 @@ function selectPkg(pkg, el) {
   document.getElementById("buy-price").textContent = `${fmt(pkg.price)} ${wt("sum_suffix")}`;
   document.getElementById("buy-bar").style.display = "flex";
   haptic("selection");
+}
+
+/* ---------------- PRODUCT SEARCH / FILTER ---------------- */
+function onPkgSearch() {
+  const inp = document.getElementById("pkg-search");
+  const clear = document.getElementById("pkg-search-clear");
+  state.pkgSearch = inp ? inp.value : "";
+  if (clear) clear.style.display = state.pkgSearch ? "flex" : "none";
+  renderGame();
+}
+
+function clearPkgSearch() {
+  const inp = document.getElementById("pkg-search");
+  if (inp) inp.value = "";
+  state.pkgSearch = "";
+  const clear = document.getElementById("pkg-search-clear");
+  if (clear) clear.style.display = "none";
+  renderGame();
+  haptic("light");
+}
+
+function setPkgSort(sort) {
+  state.pkgSort = sort;
+  document.querySelectorAll("#pkg-sort-tabs .seg-sort").forEach((b) =>
+    b.classList.toggle("active", b.dataset.sort === sort)
+  );
+  renderGame();
+  haptic("selection");
+}
+
+function onPkgPrice() {
+  const minEl = document.getElementById("pkg-min");
+  const maxEl = document.getElementById("pkg-max");
+  state.pkgMin = minEl ? minEl.value.trim() : "";
+  state.pkgMax = maxEl ? maxEl.value.trim() : "";
+  renderGame();
+}
+
+function resetPkgFilters(silent) {
+  state.pkgSearch = "";
+  state.pkgSort = "default";
+  state.pkgMin = "";
+  state.pkgMax = "";
+  const inp = document.getElementById("pkg-search");
+  if (inp) inp.value = "";
+  const clear = document.getElementById("pkg-search-clear");
+  if (clear) clear.style.display = "none";
+  const minEl = document.getElementById("pkg-min");
+  const maxEl = document.getElementById("pkg-max");
+  if (minEl) minEl.value = "";
+  if (maxEl) maxEl.value = "";
+  document.querySelectorAll("#pkg-sort-tabs .seg-sort").forEach((b) =>
+    b.classList.toggle("active", b.dataset.sort === "default")
+  );
+  if (!silent && state.currentGame) renderGame();
 }
 
 /* ---------------- VERIFY ---------------- */
@@ -1160,18 +1233,44 @@ async function showReceiptByOrder(orderId) {
 }
 
 async function reorder(orderId) {
-  const o = state.historyOrders.find(x => x.id === orderId);
-  if (!o || !o.package_id) return toast(wt("reorder_bad"));
   const res = await api("/api/reorder", { order_id: orderId });
   if (res.ok && res.order_id) {
     toast(wt("reorder_ok"));
     haptic("success");
     state.user.balance = res.balance;
     renderUser();
-    loadHistory();
+    if (activeViewId() === "view-history") loadHistory();
   } else {
     toast(res.message || res.error || wt("err_generic"));
     haptic("error");
+  }
+}
+
+/* Tez qayta buyurtma: o'yin ichida oxirgi buyurtmani takrorlash */
+let lastOrderId = 0;
+
+async function loadLastOrder(gameId) {
+  const bar = document.getElementById("repeat-bar");
+  if (!bar) return;
+  bar.style.display = "none";
+  lastOrderId = 0;
+  const res = await api("/api/last_order", { game_id: gameId });
+  if (res.ok && res.order) {
+    lastOrderId = res.order.id;
+    const sub = document.getElementById("repeat-sub");
+    if (sub) sub.textContent = `#${res.order.id} · ${res.order.package_name} — ${fmt(res.order.price)} ${wt("sum_suffix")}`;
+    bar.style.display = "flex";
+  }
+}
+
+async function repeatLastOrder() {
+  if (!lastOrderId) return;
+  const btn = document.getElementById("repeat-btn");
+  if (btn) btn.disabled = true;
+  try {
+    await reorder(lastOrderId);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
