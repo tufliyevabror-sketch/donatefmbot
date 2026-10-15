@@ -1789,12 +1789,47 @@ function updateNotifBadge() {
 }
 
 /* ---------------- ADMIN PANEL ---------------- */
+function stagReveal(root) {
+  if (!root) return;
+  const deep = root.querySelectorAll(
+    ":scope > .stat-grid > .stat-card, " +
+    ":scope > #admin-orders-list > .h-card, " +
+    ":scope > #admin-users-list > .h-card, " +
+    ":scope > #admin-pay-list > .h-card, " +
+    ":scope > .games-grid > .game-card"
+  );
+  let i = 0;
+  const mark = (el) => {
+    if (el.dataset.staged) return;
+    el.dataset.staged = "1";
+    el.style.opacity = "1";
+    el.style.animationDelay = Math.min(i * 0.05, 0.55) + "s";
+    el.classList.add("reveal-up");
+    i++;
+  };
+  root.querySelectorAll(":scope > *").forEach((el) => {
+    if (
+      el.classList.contains("stat-grid") ||
+      el.classList.contains("games-grid") ||
+      el.classList.contains("sk") ||
+      el.classList.contains("sk-card") ||
+      el.id === "admin-orders-list" ||
+      el.id === "admin-users-list" ||
+      el.id === "admin-pay-list"
+    ) return;
+    mark(el);
+  });
+  deep.forEach(mark);
+}
+
 function switchAdmin(tab) {
   state.adminTab = tab;
   document.querySelectorAll(".atab").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
   const content = document.getElementById("admin-content");
   if (content) { content.classList.remove("tab-anim"); void content.offsetWidth; content.classList.add("tab-anim"); }
-  loadAdmin();
+  const p = loadAdmin();
+  if (p && typeof p.then === "function") p.then(() => stagReveal(content)).catch(() => {});
+  setTimeout(() => { if (content) stagReveal(content); }, 650);
   haptic("selection");
 }
 
@@ -1804,15 +1839,24 @@ async function loadAdmin() {
     content.innerHTML = emptyHtml("🔒", wt("no_admin_rights"), wt("only_admins"));
     return;
   }
-  if (state.adminTab === "dash") return loadAdminDash(content);
-  if (state.adminTab === "orders") return loadAdminOrders(content);
-  if (state.adminTab === "payments") return loadAdminPayments(content);
-  if (state.adminTab === "users") return loadAdminUsers(content);
-  if (state.adminTab === "promos") return loadAdminPromos(content);
-  if (state.adminTab === "games") return loadAdminGames(content);
-  if (state.adminTab === "broadcast") return loadAdminBroadcast(content);
-  if (state.adminTab === "settings") return loadAdminSettings(content);
-  if (state.adminTab === "audit") return loadAdminAudit(content);
+  // Race guard: kechikkan eski tab yozuvi yangi tabni bosmasin
+  const seq = (state.adminSeq = (state.adminSeq || 0) + 1);
+  const c = new Proxy(content, {
+    set(t, k, v) {
+      if ((state.adminSeq || 0) !== seq) return true;
+      t[k] = v;
+      return true;
+    },
+  });
+  if (state.adminTab === "dash") return loadAdminDash(c);
+  if (state.adminTab === "orders") return loadAdminOrders(c);
+  if (state.adminTab === "payments") return loadAdminPayments(c);
+  if (state.adminTab === "users") return loadAdminUsers(c);
+  if (state.adminTab === "promos") return loadAdminPromos(c);
+  if (state.adminTab === "games") return loadAdminGames(c);
+  if (state.adminTab === "broadcast") return loadAdminBroadcast(c);
+  if (state.adminTab === "settings") return loadAdminSettings(c);
+  if (state.adminTab === "audit") return loadAdminAudit(c);
 }
 
 /* Sparkline SVG */
@@ -1967,6 +2011,7 @@ async function renderAdminOrders() {
       </div>`;
     wrap.appendChild(el);
   });
+  stagReveal(wrap);
 }
 
 async function adminOrder(orderId, action, price) {
@@ -2033,6 +2078,7 @@ async function renderAdminPayments() {
       </div>` : ""}`;
     wrap.appendChild(el);
   });
+  stagReveal(wrap);
 }
 
 async function adminPay(paymentId, action) {
@@ -2090,6 +2136,7 @@ function renderAdminUsers(users) {
       </div>`;
     wrap.appendChild(el);
   });
+  stagReveal(wrap);
 }
 
 async function adminToggleBan(userId, ban) {
@@ -2412,6 +2459,7 @@ async function loadAdminSettings(content) {
         <label>${wt("set_star_rate")}<input type="text" id="set_star" inputmode="numeric" value="${st.star_rate_1000}"></label>
         <label>${wt("set_min_topup")}<input type="text" id="set_min" inputmode="numeric" value="${st.min_topup_card}"></label>
         <label>${wt("set_max_topup")}<input type="text" id="set_max" inputmode="numeric" value="${st.max_topup_card}"></label>
+        <label>${wt("set_daily_bonus")}<input type="text" id="set_bonus" inputmode="numeric" value="${st.daily_bonus_amount || 5000}"></label>
         <label>${wt("set_pay_window")}<input type="text" id="set_window" inputmode="numeric" value="${st.pay_window_seconds}"></label>
         <label>${wt("set_card_active")}
           <select id="set_card">${["uzcard", "humo", "tbc", "uzum"].map((c) => `<option value="${c}" ${st.card_active === c ? "selected" : ""}>${c}</option>`).join("")}</select>
@@ -2467,6 +2515,7 @@ async function adminSaveSettings() {
     star_rate_1000: num("set_star"),
     min_topup_card: num("set_min"),
     max_topup_card: num("set_max"),
+    daily_bonus_amount: num("set_bonus"),
     pay_window_seconds: num("set_window"),
     card_active: document.getElementById("set_card")?.value || "uzcard",
     support_username: num("set_supuser"),

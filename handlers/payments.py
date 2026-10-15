@@ -215,7 +215,7 @@ async def topup_stars_amount(call: CallbackQuery):
     som = stars_to_som(stars)
     
     # Loading animation
-    msg = await call.message.edit_text("⭐️ <b>Stars to'lovi</b>\n\n⏳ <b>Invoice yaratilmoqda...</b> ", reply_markup=None)
+    await call.message.edit_text("⭐️ <b>Stars to'lovi</b>\n\n⏳ <b>Invoice yaratilmoqda...</b> ", reply_markup=None)
     await asyncio.sleep(0.3)
     
     await call.message.answer_invoice(

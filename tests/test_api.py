@@ -102,14 +102,16 @@ def test_cheq_verdict_has_all_levels():
 
 def test_card_number_never_hardcoded():
     """config.py da haqiqiy karta raqami BO'LMASLIGI kerak."""
-    src = open(f"{BASE}/config.py", encoding="utf-8").read()
+    with open(f"{BASE}/config.py", encoding="utf-8") as fh:
+        src = fh.read()
     for needle in ("5614 6812", "9860 2466", "4466 1369", "4916 9903", "8800667035:AAF"):
         assert needle not in src, f"config.py da maxfiy ma'lumot: {needle}"
     print("  OK  config.py -> karta raqami/token yo'q")
 
 
 def test_gitignore_protects_runtime_secrets():
-    gi = open(f"{BASE}/.gitignore", encoding="utf-8").read()
+    with open(f"{BASE}/.gitignore", encoding="utf-8") as fh:
+        gi = fh.read()
     for needle in (".env", "data/settings.json", "data/*.db", "logs/"):
         assert needle in gi, f".gitignore da yo'q: {needle}"
     print("  OK  .gitignore -> .env/settings.json/DB/loglar himoyalangan")

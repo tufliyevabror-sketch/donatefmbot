@@ -91,7 +91,7 @@ async def main():
     uid2 = 900002
     await db.register_user(uid2, "tester2", "Tester2")
     await db.add_balance(uid2, 500000, method="test", ref="seed-2")
-    o_a, _ = await db.purchase(uid2, "freefire", "100 Diamonds", "100", 10990, "5550001", "ff-100")
+    _o_a, _ = await db.purchase(uid2, "freefire", "100 Diamonds", "100", 10990, "5550001", "ff-100")
     dup_other = await db.find_recent_duplicate_order(
         900003, "freefire", "ff-100", "5550001", minutes=10
     )

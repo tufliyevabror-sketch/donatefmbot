@@ -153,7 +153,7 @@ class ProgressBar:
     async def update(self, value: int, text: str = "") -> None:
         """Progress qiymatini yangilash."""
         self.current = min(value, self.total)
-        bar_text = self._render_bar(self.current)
+        self._render_bar(self.current)
         try:
             await self.message.edit_text(f"{self.prefix} {text}\n{self.suffix}")
         except Exception:
@@ -164,7 +164,7 @@ class ProgressBar:
         start = self.current
         steps = 20
         step_val = (target - self.current) / steps
-        delay = duration / steps
+        duration / steps
         
         for i in range(steps + 1):
             val = start + (step_val * i)
@@ -193,7 +193,6 @@ class TypingIndicator:
         self._task = asyncio.create_task(self._run())
     
     async def _run(self) -> None:
-        frames = ["✍️", "✍️✍️", "✍️✍️✍️"]
         i = 0
         while self._running:
             try:
@@ -237,7 +236,7 @@ class ToastNotification:
             "warning": "⚠️",
             "loading": "⏳",
         }
-        icon = icons.get(alert_type, "ℹ️")
+        icons.get(alert_type, "ℹ️")
         text = f"{icons.get(alert_type, 'ℹ️')} {text}"
         
         try:
@@ -311,8 +310,8 @@ class AnimatedKeyboard:
         delay: float = 0.15,
     ) -> None:
         """Tugmalarni birma-bir ko'rsatish (staggered reveal)."""
-        builder = InlineKeyboardBuilder()
-        current_markup = InlineKeyboardMarkup(inline_keyboard=[])
+        InlineKeyboardBuilder()
+        InlineKeyboardMarkup(inline_keyboard=[])
         
         for i, btn in enumerate(buttons):
             # Har bir tugmani qo'shib, markupni yangilash
@@ -364,10 +363,9 @@ async def show_progress(
     suffix: str = "",
 ) -> str:
     """Progress bar matnini qaytarish (edit uchun)."""
-    progress = min(current / max(total, 1), 1.0)
-    width = 20
+    min(current / max(total, 1), 1.0)
     filled = int(20 * current / max(total, 1))
-    bar = "▰" * filled + "▱" * (20 - filled)
+    "▰" * filled + "▱" * (20 - filled)
     percent = int(min(100, (current / max(total, 1)) * 100))
     return f"📊 {filled*5}%\n[{'▰' * filled}{'▱' * (20 - filled)}] {percent}%"
 
@@ -474,7 +472,7 @@ def make_progress_bar(current: int, total: int, width: int = 20) -> str:
         return "▱" * 20 + " 0%"
     progress = min(current / total, 1.0)
     filled = int(20 * progress)
-    bar = "▰" * filled + "▱" * (20 - filled)
+    "▰" * filled + "▱" * (20 - filled)
     percent = int(min(100, (current / total) * 100))
     return f"[{'▰' * filled}{'▱' * (20 - filled)}] {percent}%"
 
@@ -502,8 +500,8 @@ async def stagger_keyboard_reveal(
     from aiogram.types import InlineKeyboardMarkup
     from aiogram.utils.keyboard import InlineKeyboardBuilder
     
-    builder = InlineKeyboardBuilder()
-    markup = InlineKeyboardMarkup(inline_keyboard=[])
+    InlineKeyboardBuilder()
+    InlineKeyboardMarkup(inline_keyboard=[])
     
     # Har bir tugma uchun alohida ko'rsatish (staggered)
     for i, (text, callback_data) in enumerate(buttons_data):
@@ -526,47 +524,47 @@ async def keyboard_pulse_animation(
 # ============================================================
 
 __all__ = [
-    "AnimationController",
-    "ProgressBar",
-    "TypingIndicator",
-    "ToastNotification",
-    "SmoothTransition",
-    "AnimatedKeyboard",
-    "show_loading",
-    "show_progress",
-    "make_progress_bar",
-    "make_spinner_frame",
-    "make_dots_frame",
-    "show_typing",
-    "animate_success",
-    "animate_error",
-    "animate_warning",
-    "pulse_text",
-    "countdown_animation",
-    "stagger_keyboard_reveal",
-    "keyboard_pulse_animation",
-    # Frames
-    "SPINNER_FRAMES",
-    "SPINNER_FRAMES_2",
-    "BOUNCE_FRAMES",
-    "PULSE_FRAMES",
-    "DOTS_FRAMES",
     "ARROW_FRAMES",
+    "BOUNCE_FRAMES",
     "CLOCK_FRAMES",
-    "MOON_FRAMES",
+    "DOTS_FRAMES",
     "EARTH_FRAMES",
-    "ROCKET_FRAMES",
-    "HEART_FRAMES",
-    "SPARKLE_FRAMES",
-    "GEAR_FRAMES",
-    "LIGHTNING_FRAMES",
-    "SUCCESS_FRAMES",
     "ERROR_FRAMES",
-    "WARNING_FRAMES",
+    "GEAR_FRAMES",
+    "HEART_FRAMES",
+    "LIGHTNING_FRAMES",
     "LOADING_FRAMES",
-    "TYPING_FRAMES",
-    "TYPING_DOTS",
+    "MOON_FRAMES",
     "PROGRESS_EMPTY",
     "PROGRESS_FILL",
     "PROGRESS_PARTIAL",
+    "PULSE_FRAMES",
+    "ROCKET_FRAMES",
+    "SPARKLE_FRAMES",
+    # Frames
+    "SPINNER_FRAMES",
+    "SPINNER_FRAMES_2",
+    "SUCCESS_FRAMES",
+    "TYPING_DOTS",
+    "TYPING_FRAMES",
+    "WARNING_FRAMES",
+    "AnimatedKeyboard",
+    "AnimationController",
+    "ProgressBar",
+    "SmoothTransition",
+    "ToastNotification",
+    "TypingIndicator",
+    "animate_error",
+    "animate_success",
+    "animate_warning",
+    "countdown_animation",
+    "keyboard_pulse_animation",
+    "make_dots_frame",
+    "make_progress_bar",
+    "make_spinner_frame",
+    "pulse_text",
+    "show_loading",
+    "show_progress",
+    "show_typing",
+    "stagger_keyboard_reveal",
 ]

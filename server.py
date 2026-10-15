@@ -1748,6 +1748,7 @@ _SETTINGS_INT_FIELDS = {
     "min_topup_card": (0, 10_000_000_000),
     "max_topup_card": (0, 10_000_000_000),
     "pay_window_seconds": (30, 86400),
+    "daily_bonus_amount": (100, 500_000),
 }
 _SETTINGS_STR_FIELDS = ("support_username", "support_phone", "support_email", "admin_username")
 _CARD_OPTIONS = ("uzcard", "humo", "tbc", "uzum")
@@ -1780,6 +1781,7 @@ async def api_admin_settings_get(request: Request):
             "min_topup_card": int(s.get("min_topup_card", 10000)),
             "max_topup_card": int(s.get("max_topup_card", 1000000)),
             "pay_window_seconds": int(s.get("pay_window_seconds", 300)),
+            "daily_bonus_amount": int(s.get("daily_bonus_amount", 5000)),
             "card_active": str(s.get("card_active", "uzcard")),
             "support_username": str(s.get("support_username", "")),
             "support_phone": str(s.get("support_phone", "")),

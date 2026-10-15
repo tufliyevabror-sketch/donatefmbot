@@ -282,6 +282,33 @@ async def set_lang(call: CallbackQuery):
     await safe_edit(call.message, ls.settings_text(user), reply_markup=kb.user_settings_kb(new_lang))
 
 
+@router.message(Command("bonus"))
+@router.message(F.text == "🎁 Kunlik bonus")
+async def daily_bonus_cmd(message: Message):
+    if not await _ensure_not_banned(message):
+        return
+    uid = message.from_user.id
+    user = await db.get_user(uid)
+    if not user:
+        await db.register_user(uid, message.from_user.username, message.from_user.first_name or "")
+    claimed, amount, balance, next_ts = await db.claim_daily_bonus(uid)
+    if claimed:
+        await message.answer(
+            f"🎉 Kunlik bonus olindi: +{amount:,} so'm!\n"
+            f"💰 Balans: {balance:,} so'm".replace(",", " "),
+            reply_markup=kb.main_menu_kb(),
+        )
+        return
+    left = max(0, int(next_ts) - int(time.time()))
+    h, rem = divmod(left, 3600)
+    m, s = divmod(rem, 60)
+    await message.answer(
+        f"⏳ Bugungi bonus olindi.\n"
+        f"Keyingi bonus: {h:02}:{m:02}:{s:02} so'ndan keyin.",
+        reply_markup=kb.main_menu_kb(),
+    )
+
+
 @router.message(F.text == "🤝 Taklif")
 async def show_taklif(message: Message):
     if not await _ensure_not_banned(message): return

@@ -45,6 +45,7 @@ def main_menu_kb():
         [KeyboardButton(text="🤝 Taklif"), KeyboardButton(text="❓ Yordam")],
         [KeyboardButton(text="📊 Statistika"), KeyboardButton(text="📧 Murojaat")],
         [KeyboardButton(text="⚙️ Sozlamalar")],
+        [KeyboardButton(text="🎁 Kunlik bonus")],
     ]
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True, input_field_placeholder="Donate FM")
 
