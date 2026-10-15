@@ -18,7 +18,7 @@
   --radius: 16px;
   --radius-lg: 22px;
   --radius-sm: 12px;
-  --grad-hero: linear-gradient(120deg, #7c5cfc 0%, #c026d3 58%, #4cc9f0 118%);
+  --grad-hero: linear-gradient(280deg, #7c5cfc 0%, #c026d3 58%, #4cc9f0 118%);
   --grad-ok: linear-gradient(135deg, #3ddc84, #22c55e);
   --grad-warn: linear-gradient(135deg, #fbbf24, #f59e0b);
   --grad-danger: linear-gradient(135deg, #f87171, #ef4444);
@@ -469,6 +469,7 @@ html[data-theme="light"] .logo {
   position: relative; overflow: hidden;
   height: 64px; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--b1, var(--accent)) 0%, var(--b2, var(--accent3)) 100%);
+  background: linear-gradient(280deg, var(--b1, var(--accent)) 0%, var(--b2, var(--accent3)) 100%);
 }
 .g-strip::before {
   content: ""; position: absolute; inset: 0;
@@ -558,6 +559,7 @@ html[data-theme="light"] .logo {
   padding: 18px 16px; min-height: 104px;
   display: flex; align-items: center; gap: 14px;
   background: linear-gradient(125deg, var(--b1, var(--accent)) 0%, var(--b2, var(--accent3)) 100%);
+  background: linear-gradient(280deg, var(--b1, var(--accent)) 0%, var(--b2, var(--accent3)) 100%);
   box-shadow: 0 12px 36px var(--glow, rgba(124,92,252,.4));
   border: 1px solid rgba(255,255,255,.16);
 }
@@ -609,16 +611,16 @@ html[data-theme="light"] .logo {
 
 /* Brand tints inside game page */
 #view-game .verify-btn {
-  background: linear-gradient(135deg, var(--brand1), var(--brand2));
+  background: linear-gradient(280deg, var(--brand1), var(--brand2));
   box-shadow: 0 4px 16px var(--brand-glow);
 }
 #view-game .verify-btn:hover { box-shadow: 0 6px 22px var(--brand-glow); }
 #view-game .cat-chip.active {
-  background: linear-gradient(135deg, var(--brand1), var(--brand2));
+  background: linear-gradient(280deg, var(--brand1), var(--brand2));
   box-shadow: 0 4px 16px var(--brand-glow);
 }
 #view-game .seg-sort.active {
-  background: linear-gradient(135deg, var(--brand1), var(--brand2));
+  background: linear-gradient(280deg, var(--brand1), var(--brand2));
   box-shadow: 0 4px 16px var(--brand-glow);
 }
 #view-game .product-card:hover {
@@ -631,7 +633,7 @@ html[data-theme="light"] .logo {
 }
 #view-game .product-card.selected .p-check { background: var(--brand1); }
 #view-game .buy-btn {
-  background: linear-gradient(135deg, var(--brand1), var(--brand2));
+  background: linear-gradient(280deg, var(--brand1), var(--brand2));
   box-shadow: 0 6px 20px var(--brand-glow);
 }
 #view-game .section-title::after {
