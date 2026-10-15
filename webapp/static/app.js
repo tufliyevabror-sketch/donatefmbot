@@ -1842,6 +1842,10 @@ async function loadAdmin() {
   // Race guard: kechikkan eski tab yozuvi yangi tabni bosmasin
   const seq = (state.adminSeq = (state.adminSeq || 0) + 1);
   const c = new Proxy(content, {
+    get(t, k) {
+      const v = t[k];
+      return typeof v === "function" ? v.bind(t) : v;
+    },
     set(t, k, v) {
       if ((state.adminSeq || 0) !== seq) return true;
       t[k] = v;
