@@ -22,13 +22,22 @@ def _row_factory(cursor, row):
     return DBRow(zip([c[0] for c in cursor.description], row))
 
 
-_shared: aiosqlite.Connection | None = None
+_pool: list[aiosqlite.Connection] = []
+_POOL_MAX = 8
+
+
+async def _open_connection() -> aiosqlite.Connection:
+    conn = await aiosqlite.connect(DB_PATH, timeout=15)
+    conn.row_factory = _row_factory
+    await conn.execute("PRAGMA journal_mode=WAL")
+    await conn.execute("PRAGMA busy_timeout=10000")
+    return conn
 
 
 class _SharedConn:
-    """Bitta persistent (WAL) ulanish — har funksiyada yangi gacha bo'lgan 88 ta
-    `aiosqlite.connect()` o'rniga. `close()` real yopilish emas (saqlanadi).
-    Hamma kod bitta event-loop'da ishlagani uchun aiosqlite xavfsiz."""
+    """Bir vaqtda parallel so'rovlar ALA-DASTUR: har bir `get_connection()`
+    o'z alohida connection'ini oladi (BEGIN/ROLLBACK bir-birini buzolmaydi).
+    `close()` — poolga qaytarish (yopish emas). Qolgan tranzaksiya rollback."""
     __slots__ = ("_c",)
 
     def __init__(self, conn: aiosqlite.Connection):
@@ -41,18 +50,28 @@ class _SharedConn:
         object.__setattr__(object.__getattribute__(self, "_c"), key, value)
 
     async def close(self) -> None:
-        return None  # MAX SPEED: ulanishni yopmang — keyingi so'rovda qayta qo'llanadi
+        c = object.__getattribute__(self, "_c")
+        if c is None:
+            return
+        object.__setattr__(self, "_c", None)
+        try:
+            if getattr(c, "in_transaction", False):
+                await c.execute("ROLLBACK")
+        except Exception:
+            pass
+        if len(_pool) < _POOL_MAX:
+            _pool.append(c)
+        else:
+            try:
+                await c.close()
+            except Exception:
+                pass
 
 
 async def get_connection():
-    global _shared
-    if _shared is None:
-        conn = await aiosqlite.connect(DB_PATH, timeout=15)
-        conn.row_factory = _row_factory
-        await conn.execute("PRAGMA journal_mode=WAL")
-        await conn.execute("PRAGMA busy_timeout=10000")
-        _shared = conn
-    return _SharedConn(_shared)
+    if _pool:
+        return _SharedConn(_pool.pop())
+    return _SharedConn(await _open_connection())
 
 
 async def init_db():
