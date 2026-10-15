@@ -40,15 +40,13 @@ def find_package(game_id, package_id):
 
 def main_menu_kb():
     kb = [
-        [KeyboardButton(text="🏠 Bosh sahifa")],
-        [KeyboardButton(text="🛒 O'yinlar")],
-        [KeyboardButton(text="💰 Balans")],
-        [KeyboardButton(text="📜 Tarix")],
+        [KeyboardButton(text="🏠 Bosh sahifa"), KeyboardButton(text="🛒 O'yinlar")],
+        [KeyboardButton(text="💰 Balans"), KeyboardButton(text="📜 Tarix")],
         [KeyboardButton(text="🤝 Taklif"), KeyboardButton(text="❓ Yordam")],
         [KeyboardButton(text="📊 Statistika"), KeyboardButton(text="📧 Murojaat")],
         [KeyboardButton(text="⚙️ Sozlamalar")],
     ]
-    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True, input_field_placeholder="Donate FM")
 
 
 def help_kb():
@@ -98,20 +96,23 @@ def games_menu_kb():
 
 
 def packages_kb(game_id):
-    builder = InlineKeyboardBuilder()
     game = find_game(game_id)
     if not game:
         return InlineKeyboardMarkup(inline_keyboard=[])
-    for p in game["packages"]:
-        btn = InlineKeyboardButton(
-            text=f"{p['name']} — {p['price']:,} so'm".replace(",", " "),
-            callback_data=f"pkg:{game_id}:{p['id']}",
-        )
-        builder.add(btn)
-    builder.add(InlineKeyboardButton(text="🔙 Orqaga", callback_data="back:games"))
-    builder.add(InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="back:home"))
-    builder.adjust(1)
-    return builder.as_markup()
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"{p['name']} — {p['price']:,} so'm".replace(",", " "),
+                callback_data=f"pkg:{game_id}:{p['id']}",
+            )
+        ]
+        for p in game["packages"]
+    ]
+    rows.append([
+        InlineKeyboardButton(text="🔙 Orqaga", callback_data="back:games"),
+        InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="back:home"),
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def back_home_kb():
@@ -126,17 +127,15 @@ def pay_method_kb(game_id, package_id, price, balance):
     name = "💠 Balans bilan to'lash"
     if balance < price:
         name = f"💠 Balans bilan ({balance:,} so'm yetarli emas)".replace(",", " ")
-    builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text=name, callback_data=f"buy_balance:{game_id}:{package_id}"))
-    builder.add(
-        InlineKeyboardButton(
-            text="⭐️ Telegram Stars", callback_data=f"buy_stars:{game_id}:{package_id}"
-        )
-    )
-    builder.add(InlineKeyboardButton(text="🔙 Orqaga", callback_data=f"game:{game_id}"))
-    builder.add(InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="back:home"))
-    builder.adjust(1)
-    return builder.as_markup()
+    rows = [
+        [InlineKeyboardButton(text=name, callback_data=f"buy_balance:{game_id}:{package_id}")],
+        [InlineKeyboardButton(text="⭐️ Telegram Stars", callback_data=f"buy_stars:{game_id}:{package_id}")],
+        [
+            InlineKeyboardButton(text="🔙 Orqaga", callback_data=f"game:{game_id}"),
+            InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="back:home"),
+        ],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def balance_kb():
@@ -146,6 +145,7 @@ def balance_kb():
         InlineKeyboardButton(text="⭐️ Telegram Stars bilan", callback_data="topup:stars")
     )
     builder.add(InlineKeyboardButton(text="💳 Karta orqali", callback_data="topup:card"))
+    builder.add(InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="back:home"))
     builder.adjust(1)
     return builder.as_markup()
 
@@ -189,10 +189,10 @@ def topup_stars_amounts_kb():
 
 def confirm_topup_kb(payment_id):
     return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Tasdiqlandi", callback_data=f"admin_pay_ok:{payment_id}")],
-            [InlineKeyboardButton(text="❌ Rad etish", callback_data=f"admin_pay_no:{payment_id}")],
-        ]
+        inline_keyboard=[[
+            InlineKeyboardButton(text="✅ Tasdiqlandi", callback_data=f"admin_pay_ok:{payment_id}"),
+            InlineKeyboardButton(text="❌ Rad etish", callback_data=f"admin_pay_no:{payment_id}"),
+        ]]
     )
 
 
@@ -207,8 +207,10 @@ def order_admin_kb(order_id, player_id=""):
         ])
     rows += [
         [InlineKeyboardButton(text="🚚 Avto-yuborish", callback_data=f"admin_send_delivery:{order_id}")],
-        [InlineKeyboardButton(text="✅ Bajarildi", callback_data=f"admin_order_ok:{order_id}")],
-        [InlineKeyboardButton(text="↩️ Qaytarish", callback_data=f"admin_order_refund:{order_id}")],
+        [
+            InlineKeyboardButton(text="✅ Bajarildi", callback_data=f"admin_order_ok:{order_id}"),
+            InlineKeyboardButton(text="↩️ Qaytarish", callback_data=f"admin_order_refund:{order_id}"),
+        ],
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -354,8 +356,10 @@ def user_view_kb(user_id, is_banned=False, is_reseller=False):
     res_text = "🏪 Sotuvchilikni o'chirish" if is_reseller else "🏪 Sotuvchi qilish"
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="➕ Balans qo'shish", callback_data=f"admin_ub_plus:{user_id}")],
-            [InlineKeyboardButton(text="➖ Balans kamaytirish", callback_data=f"admin_ub_minus:{user_id}")],
+            [
+                InlineKeyboardButton(text="➕ Balans", callback_data=f"admin_ub_plus:{user_id}"),
+                InlineKeyboardButton(text="➖ Balans", callback_data=f"admin_ub_minus:{user_id}"),
+            ],
             [InlineKeyboardButton(text=res_text, callback_data=f"admin_reseller:{user_id}:{0 if is_reseller else 1}")],
             [InlineKeyboardButton(text=ban_text, callback_data=f"admin_ban:{user_id}:{0 if is_banned else 1}")],
             [InlineKeyboardButton(text="🔙 Orqaga", callback_data="admin:users")],
