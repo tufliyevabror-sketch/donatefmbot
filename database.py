@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime, timedelta
 
 import aiosqlite
@@ -209,6 +210,7 @@ async def init_db():
     await add_column_if_missing(conn, "users", "keshbek", "INTEGER DEFAULT 0")
     await add_column_if_missing(conn, "users", "referrer_id", "INTEGER DEFAULT 0")
     await add_column_if_missing(conn, "users", "theme", "TEXT DEFAULT 'dark'")
+    await add_column_if_missing(conn, "users", "last_bonus_at", "TEXT DEFAULT ''")
     await add_column_if_missing(conn, "orders", "package_id", "TEXT DEFAULT ''")
     await add_column_if_missing(conn, "notifications", "is_read", "INTEGER DEFAULT 0")
     await add_column_if_missing(conn, "notifications", "status", "INTEGER DEFAULT 0")
@@ -1757,5 +1759,72 @@ async def save_theme(user_id, theme):
         await conn.execute("UPDATE users SET theme = ? WHERE user_id = ?", (theme, user_id))
         await conn.commit()
         return theme
+    finally:
+        await conn.close()
+
+
+async def get_daily_bonus_state(user_id):
+    """-> (last_ts, amount) — holat ko'rsatish uchun (claim'siz)."""
+    from config import get_settings
+
+    conn = await get_connection()
+    try:
+        row = await conn.execute_fetchall(
+            "SELECT last_bonus_at FROM users WHERE user_id = ?", (user_id,)
+        )
+        last = 0
+        if row:
+            try:
+                last = int(row[0].get("last_bonus_at") or 0)
+            except (TypeError, ValueError):
+                last = 0
+        amount = _safe_int(get_settings().get("daily_bonus_amount", 5000), 5000)
+        if amount < 0:
+            amount = 5000
+        return last, amount
+    finally:
+        await conn.close()
+
+
+async def claim_daily_bonus(user_id):
+    """24h cooldown bilan kunlik bonus. Atomik bitta UPDATE shart bilan —
+    parallel so'rovlar uchun BEGIN kerak emas.
+    -> (claimed: bool, amount, balance, next_ts)"""
+    from config import get_settings
+
+    now = int(time.time())
+    amount = _safe_int(get_settings().get("daily_bonus_amount", 5000), 5000)
+    if amount < 0:
+        amount = 5000
+    cutoff = now - 86400
+    conn = await get_connection()
+    try:
+        cur = await conn.execute(
+            "UPDATE users SET last_bonus_at = ?, balance = balance + ? "
+            "WHERE user_id = ? AND COALESCE(CAST(last_bonus_at AS INTEGER), 0) < ?",
+            (str(now), amount, user_id, cutoff),
+        )
+        if cur.rowcount == 0:
+            row = await conn.execute_fetchall(
+                "SELECT last_bonus_at FROM users WHERE user_id = ?", (user_id,)
+            )
+            last = 0
+            if row:
+                try:
+                    last = int(row[0].get("last_bonus_at") or 0)
+                except (TypeError, ValueError):
+                    last = 0
+            return False, amount, 0, last + 86400
+        await conn.execute(
+            "INSERT INTO payments (user_id, method, amount, ref, status, created_at) "
+            "VALUES (?, 'daily_bonus', ?, ?, 'tasdiqlandi', ?)",
+            (user_id, amount, f"daily_{user_id}_{now}", datetime.now().strftime("%Y-%m-%d %H:%M")),
+        )
+        await conn.commit()
+        row = await conn.execute_fetchall(
+            "SELECT balance FROM users WHERE user_id = ?", (user_id,)
+        )
+        balance = int(row[0].get("balance") or 0) if row else 0
+        return True, amount, balance, now + 86400
     finally:
         await conn.close()

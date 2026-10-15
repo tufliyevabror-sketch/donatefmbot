@@ -476,6 +476,7 @@ async def api_init(request: Request):
     # i18n for webapp
     import i18n
     webapp_i18n = i18n.WEBAPP_I18N
+    db_last_bonus, db_bonus_amount = await db.get_daily_bonus_state(db_user["user_id"])
     return {
         "ok": True,
         "user": {
@@ -510,6 +511,7 @@ async def api_init(request: Request):
         "min_topup": config.min_topup_card(),
         "i18n": webapp_i18n,
         "maintenance": bool(s.get("maintenance", False)),
+        "daily_bonus": {"last": db_last_bonus, "amount": db_bonus_amount},
     }
 
 
@@ -1007,6 +1009,22 @@ async def api_save_theme(request: Request):
         return JSONResponse({"ok": False, "error": "init_data"}, status_code=400)
     theme = await db.save_theme(user["id"], body.get("theme", "dark"))
     return {"ok": True, "theme": theme}
+
+
+@app.post("/api/daily_bonus")
+async def api_daily_bonus(request: Request):
+    body = await _parse_body(request)
+    if body is None:
+        return JSONResponse({"ok": False, "error": "bad_request"}, status_code=400)
+    user, db_user = await get_user_full(body.get("initData", ""))
+    if not user:
+        return JSONResponse({"ok": False, "error": "init_data"}, status_code=400)
+    if db_user and "is_banned" in db_user and db_user["is_banned"]:
+        return {"ok": False, "error": "banned", "message": "Siz bloklangansiz."}
+    claimed, amount, balance, next_ts = await db.claim_daily_bonus(user["id"])
+    if not claimed:
+        return {"ok": False, "error": "cooldown", "next_available": next_ts, "amount": amount}
+    return {"ok": True, "amount": amount, "balance": balance, "next_available": next_ts}
 
 
 @app.post("/api/favorites")

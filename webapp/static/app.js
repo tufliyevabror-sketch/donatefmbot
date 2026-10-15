@@ -32,6 +32,7 @@ function hydrateI18n(root) {
     scope.querySelectorAll("[data-i18n-title]").forEach((el) => {
         el.title = wt(el.getAttribute("data-i18n-title"));
     });
+    if (typeof renderBonus === "function") renderBonus();
 }
 
 function stLabel(code) {
@@ -83,6 +84,7 @@ let state = {
   historyOrders: [],
   unreadNotifs: 0,
   theme: "dark",
+  dailyBonus: { last: 0, amount: 5000 },
   gameIsFav: false,
   homeGameFilter: "all",
   pkgSearch: "",
@@ -103,15 +105,30 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
 })[c]);
 
 /* ---------------- THEME ---------------- */
+function systemTheme() {
+  try {
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  } catch (e) {
+    return "dark";
+  }
+}
+
 function applyTheme(theme, persist) {
-  state.theme = theme === "light" ? "light" : "dark";
+  if (theme === "auto") state.themeMode = "auto";
+  else state.themeMode = theme === "light" ? "light" : "dark";
+  const resolved = state.themeMode === "auto" ? systemTheme() : state.themeMode;
+  state.theme = resolved === "light" ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", state.theme);
+  try { localStorage.setItem("gs_theme", state.theme); } catch (e) {}
+  try { localStorage.setItem("gs_theme_mode", state.themeMode); } catch (e) {}
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = state.theme === "light" ? "#f4f7fb" : "#0e1621";
   const cs = document.querySelector('meta[name="color-scheme"]');
   if (cs) cs.content = state.theme;
   try { tg?.setHeaderColor?.(state.theme === "light" ? "#f4f7fb" : "#0e1621"); } catch (e) {}
   try { tg?.setBackgroundColor?.(state.theme === "light" ? "#f4f7fb" : "#0e1621"); } catch (e) {}
+  const ta = document.getElementById("theme-auto");
+  if (ta) ta.classList.toggle("active", state.themeMode === "auto");
   if (persist && state.user) api("/api/save_theme", { theme: state.theme });
 }
 
@@ -120,6 +137,18 @@ function toggleTheme() {
   tg?.HapticFeedback?.selectionChanged();
   toast(state.theme === "light" ? wt("light_mode") : wt("dark_mode"));
 }
+
+function setThemeAuto() {
+  applyTheme("auto", true);
+  tg?.HapticFeedback?.selectionChanged?.();
+  toast("🖥 " + wt("theme_auto") + " — " + wt(state.theme + "_mode"));
+}
+
+try {
+  window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+    if (state.themeMode === "auto") applyTheme("auto", false);
+  });
+} catch (e) {}
 
 /* ---------------- COUNT-UP ---------------- */
 function countUp(el, to, suffix = "") {
@@ -155,8 +184,9 @@ function initTg() {
   tg.ready();
   tg.expand();
   tg.disableVerticalSwipes?.();
+  const savedMode = localStorage.getItem("gs_theme_mode");
   const saved = localStorage.getItem("gs_theme");
-  applyTheme(saved || "dark", false);
+  applyTheme(savedMode || saved || "auto", false);
 }
 
 function toast(msg, ms = 2800) {
@@ -852,6 +882,7 @@ async function chooseMethod(method) {
     state.user.balance = (state.user.balance || 0) - state.selectedPkg.price;
     renderUser();
     pulseBalance();
+    successBurst();
     resetOrder();
     haptic("success");
   }
@@ -1096,6 +1127,130 @@ function pulseBalance() {
   bb.classList.add("pulse");
 }
 
+/* ---------------- SUCCESS FX ---------------- */
+const REDUCED_MOTION = (() => {
+  try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  catch (e) { return false; }
+})();
+
+function successBurst() {
+  if (REDUCED_MOTION) return;
+  const el = document.createElement("div");
+  el.className = "success-burst";
+  el.innerHTML =
+    '<span class="sb-ring"></span><span class="sb-ring d2"></span>' +
+    '<svg class="sb-check" viewBox="0 0 52 52"><path d="M14 27 l8 8 l16 -18"/></svg>';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1600);
+}
+
+function confettiBurst(n = 26) {
+  if (REDUCED_MOTION) return;
+  const colors = ["#facc15", "#f43f5e", "#4cc9f0", "#7c5cfc", "#3ddc84", "#fb923c"];
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement("div");
+    p.className = "confetti";
+    p.style.left = 18 + Math.random() * 64 + "%";
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty("--cx", (Math.random() - 0.5) * 170 + "px");
+    p.style.animationDuration = 1 + Math.random() * 0.9 + "s";
+    p.style.animationDelay = Math.random() * 0.3 + "s";
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2500);
+  }
+}
+
+/* ---------------- DAILY BONUS ---------------- */
+function fmtHMS(s) {
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const x = s % 60;
+  const pad = (v) => String(v).padStart(2, "0");
+  return pad(h) + ":" + pad(m) + ":" + pad(x);
+}
+
+function renderBonus() {
+  const card = document.getElementById("bonus-card");
+  if (!card) return;
+  const db = state.dailyBonus || { last: 0, amount: 5000 };
+  const now = Math.floor(Date.now() / 1000);
+  const last = db.last || 0;
+  const ready = now - last >= 86400;
+  card.classList.toggle("ready", ready);
+  card.classList.toggle("claimed", !ready);
+  const sub = document.getElementById("bonus-sub");
+  const cta = document.getElementById("bonus-cta");
+  if (ready) {
+    if (sub) sub.textContent = wt("bonus_ready");
+    if (cta) cta.textContent = wt("bonus_claim");
+  } else {
+    if (sub) sub.textContent = wt("bonus_next", fmtHMS(last + 86400 - now));
+    if (cta) cta.textContent = wt("bonus_claimed");
+  }
+}
+
+async function claimDailyBonus() {
+  const card = document.getElementById("bonus-card");
+  if (!card || card.dataset.busy) return;
+  const now = Math.floor(Date.now() / 1000);
+  const db = state.dailyBonus || { last: 0, amount: 5000 };
+  const last = db.last || 0;
+  if (now - last < 86400) {
+    toast(wt("bonus_next", fmtHMS(last + 86400 - now)));
+    tg?.HapticFeedback?.notificationOccurred?.("error");
+    return;
+  }
+  card.dataset.busy = "1";
+  try {
+    const res = await api("/api/daily_bonus", {});
+    if (res.ok) {
+      state.dailyBonus = { last: (res.next_available || now + 86400) - 86400, amount: res.amount };
+      state.user.balance = res.balance;
+      countUp(document.getElementById("balance-banner"), res.balance, " " + wt("sum_suffix"));
+      renderUser();
+      successBurst();
+      confettiBurst(32);
+      haptic("success");
+      toast(wt("bonus_got", res.amount));
+      renderBonus();
+    } else if (res.next_available) {
+      state.dailyBonus = { ...(state.dailyBonus || {}), last: res.next_available - 86400 };
+      renderBonus();
+      toast(wt("bonus_next", fmtHMS(res.next_available - now)));
+    }
+  } finally {
+    delete card.dataset.busy;
+  }
+}
+
+setInterval(() => {
+  const card = document.getElementById("bonus-card");
+  if (card && !card.classList.contains("ready")) renderBonus();
+}, 1000);
+
+/* ---------------- HERO PARALLAX ---------------- */
+let _plxTick = false;
+window.addEventListener("scroll", () => {
+  if (_plxTick) return;
+  _plxTick = true;
+  requestAnimationFrame(() => {
+    _plxTick = false;
+    if (REDUCED_MOTION) return;
+    const view = document.getElementById("view-game");
+    if (!view || !view.classList.contains("active")) return;
+    const hero = document.getElementById("game-hero");
+    if (!hero) return;
+    const y = Math.min(window.scrollY, 420);
+    const o1 = hero.querySelector(".gh-orb-1");
+    const o2 = hero.querySelector(".gh-orb-2");
+    const logo = hero.querySelector(".gh-logo");
+    if (o1) o1.style.translate = "0 " + y * 0.3 + "px";
+    if (o2) o2.style.translate = "0 " + y * 0.46 + "px";
+    if (logo) logo.style.translate = "0 " + y * 0.12 + "px";
+  });
+}, { passive: true });
+
 function dropFromCart(gameId, pkgId) {
   const i = state.cart.findIndex((c) => c.gameId === gameId && c.pkgId === pkgId);
   if (i < 0) return;
@@ -1180,7 +1335,11 @@ async function checkoutCart() {
   renderUser();
   closePage();
   haptic(fail ? "error" : "success");
-  if (!fail) pulseBalance();
+  if (!fail) {
+    pulseBalance();
+    successBurst();
+    confettiBurst(24);
+  }
   toast(fail ? wt("batch_result", ok, fail) : wt("batch_ok", ok));
 }
 
@@ -1464,6 +1623,8 @@ function renderSettings() {
   // theme toggle reflect
   const tt = document.getElementById("theme-toggle");
   if (tt) tt.setAttribute("data-theme-state", state.theme);
+  const ta = document.getElementById("theme-auto");
+  if (ta) ta.classList.toggle("active", state.themeMode === "auto");
 }
 
 async function savePhone() {
@@ -1547,6 +1708,7 @@ async function applyPromo() {
     state.user.balance = res.balance;
     renderUser();
     pulseBalance();
+    confettiBurst(20);
     closePage();
     haptic("success");
   } else {
@@ -2451,8 +2613,9 @@ async function init() {
   state.supportEmail = res.support_email || "";
   state.payWindowSecs = res.pay_window_seconds || 300;
   state.minTopup = res.min_topup || 3000;
-  state.theme = res.theme || localStorage.getItem("gs_theme") || "dark";
-  applyTheme(state.theme, false);
+  if (res.daily_bonus) state.dailyBonus = res.daily_bonus;
+  const modeInit = localStorage.getItem("gs_theme_mode");
+  applyTheme(modeInit || res.theme || localStorage.getItem("gs_theme") || "auto", false);
   if (res.favorites) state.favorites = res.favorites;
   if (typeof res.unread_notifs === "number") { state.unreadNotifs = res.unread_notifs; updateNotifBadge(); }
 
@@ -2460,6 +2623,7 @@ async function init() {
   document.getElementById("nav-admin").style.display = state.isAdmin ? "flex" : "none";
   moveNavGlow("view-home");
   renderUser();
+  renderBonus();
   renderHome();
   renderGameFilterBar();
   if (state.maintenance) {

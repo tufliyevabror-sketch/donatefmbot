@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/static/style.css?v=20261014g">
+  <link rel="stylesheet" href="/static/style.css?v=20261015a">
 </head>
 <body>
   <div class="bg-aurora" aria-hidden="true"></div>
@@ -44,6 +44,14 @@
           <button class="qa-btn" onclick="openView('view-history')"><span class="qa-ico">📦</span><span class="qa-label" data-i18n="orders">Buyurtmalar</span></button>
           <button class="qa-btn" onclick="openReferral()"><span class="qa-ico">🤝</span><span class="qa-label" data-i18n="referral_short">Taklif</span></button>
           <button class="qa-btn" onclick="openPromo()"><span class="qa-ico">🎁</span><span class="qa-label" data-i18n="promo_short">Promo</span></button>
+        </div>
+        <div class="bonus-card" id="bonus-card" onclick="claimDailyBonus()">
+          <div class="bc-ico">🎁</div>
+          <div class="bc-body">
+            <div class="bc-title" data-i18n="daily_bonus">KUNLIK BONUS</div>
+            <div class="bc-sub" id="bonus-sub"></div>
+          </div>
+          <div class="bc-cta" id="bonus-cta" data-i18n="bonus_claim">🎁 BONUSNI OLISH</div>
         </div>
         <div class="fav-bar">
           <button class="fav-filter active" id="fav-all" onclick="setHomeFilter('all')"><span>🎮</span> <span data-i18n="cat_all">Hammasi</span></button>
@@ -200,6 +208,7 @@
           <div class="setting-row">
             <span>🌙 <span data-i18n="theme">Mavzu</span></span>
             <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Dark / Light"></div>
+            <button class="mini-btn" id="theme-auto" onclick="setThemeAuto()"><span data-i18n="theme_auto">Avto</span></button>
           </div>
           <div class="setting-row">
             <span data-i18n="phone">Telefon raqami</span>
@@ -420,6 +429,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=20261014g"></script>
+  <script src="/static/app.js?v=20261015a"></script>
 </body>
 </html>

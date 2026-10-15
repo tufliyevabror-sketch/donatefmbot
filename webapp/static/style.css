@@ -1671,6 +1671,150 @@ html[data-theme="light"] .modal { box-shadow: 0 24px 80px rgba(15,23,42,.2); }
 }
 .fav-filter:active { transform: scale(.95); }
 
+/* ---------- Daily bonus card ---------- */
+.bonus-card {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 14px; padding: 13px 14px;
+  border-radius: 18px; cursor: pointer;
+  background: linear-gradient(280deg, rgba(251,191,36,.12), rgba(124,92,252,.10));
+  border: 1px solid rgba(251,191,36,.35);
+  position: relative; overflow: hidden;
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .25s;
+  animation: cardIn .5s .12s cubic-bezier(.22,1,.36,1) both;
+}
+.bonus-card::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.16) 50%, transparent 68%);
+  transform: translateX(-130%);
+}
+.bonus-card.ready::after { animation: sheenSweep 2.8s ease-in-out .4s infinite; }
+@keyframes sheenSweep { 0% { transform: translateX(-130%); } 60%, 100% { transform: translateX(130%); } }
+.bonus-card.ready {
+  border-color: rgba(251,191,36,.8);
+  animation: cardIn .5s .12s cubic-bezier(.22,1,.36,1) both, bonusPulse 2.4s ease-in-out .8s infinite;
+}
+@keyframes bonusPulse {
+  0%, 100% { box-shadow: 0 6px 20px rgba(251,191,36,.20); }
+  50% { box-shadow: 0 6px 32px rgba(251,191,36,.45); }
+}
+.bonus-card:active { transform: scale(.97); }
+.bonus-card.claimed { opacity: .85; }
+.bc-ico {
+  width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  background: linear-gradient(280deg, #facc15, #f59e0b);
+  box-shadow: 0 4px 14px rgba(250,204,21,.35);
+}
+.bonus-card.ready .bc-ico { animation: giftWiggle 2.4s ease-in-out infinite; }
+@keyframes giftWiggle {
+  0%, 70%, 100% { transform: rotate(0deg); }
+  76% { transform: rotate(-10deg); }
+  82% { transform: rotate(9deg); }
+  88% { transform: rotate(-5deg); }
+}
+.bc-body { min-width: 0; flex: 1; }
+.bc-title { font-size: 13px; font-weight: 900; letter-spacing: .6px; color: var(--text); }
+.bc-sub {
+  font-size: 11px; color: var(--muted); margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.bc-cta {
+  flex-shrink: 0; padding: 9px 13px; border-radius: 12px;
+  font-size: 11px; font-weight: 900; letter-spacing: .3px;
+  background: linear-gradient(280deg, #7c5cfc, #4cc9f0);
+  color: #fff; box-shadow: 0 4px 14px rgba(124,92,252,.35);
+  transition: transform .2s cubic-bezier(.22,1,.36,1), background .25s;
+}
+.bonus-card.claimed .bc-cta {
+  background: var(--card3); color: var(--muted); box-shadow: none;
+}
+.bonus-card:active .bc-cta { transform: scale(.93); }
+
+/* ---------- Success burst ---------- */
+.success-burst {
+  position: fixed; inset: 0; z-index: 95; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  animation: sbFade 1.4s ease forwards;
+}
+@keyframes sbFade { 0%, 72% { opacity: 1; } 100% { opacity: 0; } }
+.sb-check {
+  width: 96px; height: 96px; position: relative; z-index: 2;
+  background: linear-gradient(280deg, #3ddc84, #0ea5e9);
+  border-radius: 50%; padding: 24px; box-sizing: border-box;
+  box-shadow: 0 12px 44px rgba(61,220,132,.5);
+  animation: sbPop .55s cubic-bezier(.34,1.56,.64,1) both;
+}
+.sb-check path {
+  fill: none; stroke: #fff; stroke-width: 5.5;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 60; stroke-dashoffset: 60;
+  animation: sbDraw .5s .2s cubic-bezier(.22,1,.36,1) forwards;
+}
+@keyframes sbPop { 0% { transform: scale(0) rotate(-16deg); } 100% { transform: scale(1) rotate(0deg); } }
+@keyframes sbDraw { to { stroke-dashoffset: 0; } }
+.sb-ring {
+  position: absolute; width: 96px; height: 96px; border-radius: 50%;
+  border: 3px solid rgba(61,220,132,.7);
+  animation: sbRing 1s cubic-bezier(.22,1,.36,1) forwards;
+}
+.sb-ring.d2 { border-color: rgba(76,201,240,.55); animation-delay: .13s; }
+@keyframes sbRing {
+  0% { transform: scale(.7); opacity: .9; }
+  100% { transform: scale(3.6); opacity: 0; }
+}
+
+/* ---------- Confetti ---------- */
+.confetti {
+  position: fixed; top: -16px; width: 9px; height: 14px;
+  border-radius: 2px; z-index: 95; pointer-events: none;
+  animation: confFall linear forwards;
+}
+@keyframes confFall {
+  0% { transform: translateY(0) rotate(0deg) translateX(0); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(108vh) rotate(760deg) translateX(var(--cx, 0px)); opacity: 0; }
+}
+
+/* ---------- History stepper entrance ---------- */
+.h-card .pstep::before {
+  transform: scaleX(0); transform-origin: left center;
+  animation: stepFill .5s cubic-bezier(.22,1,.36,1) both;
+}
+.h-card .pstep:nth-child(2)::before { animation-delay: .3s; }
+.h-card .pstep:nth-child(3)::before { animation-delay: .46s; }
+@keyframes stepFill { to { transform: scaleX(1); } }
+.h-card .pstep .pstep-dot {
+  animation: stepDotPop .45s cubic-bezier(.34,1.56,.64,1) both;
+}
+.h-card .pstep:nth-child(2) .pstep-dot { animation-delay: .26s; }
+.h-card .pstep:nth-child(3) .pstep-dot { animation-delay: .42s; }
+.h-card .pstep.active .pstep-dot {
+  animation: stepDotPop .45s cubic-bezier(.34,1.56,.64,1) both,
+             pulseDot 1.6s ease-in-out .6s infinite;
+}
+@keyframes stepDotPop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+.h-card .pstep .pstep-label { animation: labelIn .4s .3s ease both; }
+.h-card .pstep:nth-child(3) .pstep-label { animation-delay: .48s; }
+@keyframes labelIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Game card 3D tilt (desktop) ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .game-card:hover {
+    transform: perspective(700px) rotateX(5deg) rotateY(-6deg) translateY(-5px);
+  }
+  .game-card:active {
+    transform: perspective(700px) rotateX(2deg) scale(.96);
+  }
+}
+
+/* ---------- Theme auto btn ---------- */
+.mini-btn.active {
+  background: linear-gradient(280deg, #7c5cfc, #4cc9f0);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 4px 14px rgba(124,92,252,.4);
+}
+
 /* Rating summary */
 .rating-summary {
   display: flex; align-items: center; gap: 12px;
