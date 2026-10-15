@@ -1,4 +1,4 @@
-/* ================= Game Shop Mini App ================= */
+/* ================= Donate FM Mini App ================= */
 const tg = window.Telegram?.WebApp;
 
 let WEBAPP_I18N = {};
@@ -854,7 +854,7 @@ function openPayTimer(res) {
 }
 
 function openReceiptFromTimer(paymentId, orderId, amount, method) {
-  showReceipt({ id: orderId || paymentId, payment_id: paymentId, amount, method, status: "to'lov_kutilmoqda", created_at: new Date().toLocaleString("ru-RU"), package_name: "", platform_name: "Game Shop", player_id: state.playerId || "" });
+  showReceipt({ id: orderId || paymentId, payment_id: paymentId, amount, method, status: "to'lov_kutilmoqda", created_at: new Date().toLocaleString("ru-RU"), package_name: "", platform_name: "DONATE FM", player_id: state.playerId || "" });
 }
 
 function fmtSec(sec) {
@@ -1161,16 +1161,16 @@ function showReceipt(o) {
   const [lk] = ORDER_STAT[o.status] || [null]; const label = lk ? wt(lk) : (o.status || "");
   body.innerHTML = `
     <div class="receipt-box">
-      <div class="r-head">🧾 GAME SHOP CHEK</div>
+      <div class="r-head">🧾 DONATE FM CHEK</div>
       <div class="r-row"><span class="k">${wt("order_no")}</span><span class="v">#${o.id || "—"}</span></div>
       ${o.payment_id ? `<div class="r-row"><span class="k">${wt("pay_amount")}</span><span class="v">#${o.payment_id}</span></div>` : ""}
       <div class="r-row"><span class="k">${wt("date_label")}</span><span class="v">${esc(o.created_at || new Date().toLocaleString("ru-RU"))}</span></div>
-      <div class="r-row"><span class="k">${wt("game_label")}</span><span class="v">${esc(o.platform_name || "Game Shop")}</span></div>
+      <div class="r-row"><span class="k">${wt("game_label")}</span><span class="v">${esc(o.platform_name || "DONATE FM")}</span></div>
       <div class="r-row"><span class="k">${wt("pkg_label")}</span><span class="v">${esc(o.package_name || o.method || "—")}</span></div>
       ${o.player_id ? `<div class="r-row"><span class="k">${wt("player_lbl")}</span><span class="v">${esc(o.player_id)}</span></div>` : ""}
       <div class="r-row"><span class="k">${wt("holat")}</span><span class="v">${esc(label || o.status || "")}</span></div>
       <div class="r-row r-total"><span class="k">${wt("total_label")}</span><span class="v">${fmt(o.price || o.amount || 0)} ${wt("sum_suffix")}</span></div>
-      <div class="r-foot">Game Shop · @${esc(state.botUsername || "donatefm_bot")}<br>${wt("receipt_foot")}</div>
+      <div class="r-foot">DONATE FM · @${esc(state.botUsername || "donatefm_bot")}<br>${wt("receipt_foot")}</div>
     </div>
     <button class="big-btn" onclick="window.print()">${wt("print_receipt")}</button>`;
   openPage("receipt-sheet");
@@ -1368,7 +1368,7 @@ function copyRef() {
 
 function shareRef() {
   if (!state.inviteLink) { loadReferral(); return toast(wt("loading")); }
-  const url = `https://t.me/share/url?url=${encodeURIComponent(state.inviteLink)}&text=${encodeURIComponent("Game Shop do'koniga xush kelibsiz! O'yinlarni arzon narxda oling.")}`;
+  const url = `https://t.me/share/url?url=${encodeURIComponent(state.inviteLink)}&text=${encodeURIComponent("Donate FM do'koniga xush kelibsiz! O'yinlarni arzon narxda oling.")}`;
   if (tg) {
     try { tg.openTelegramLink(url); } catch (e) { window.open(url, "_blank"); }
   } else window.open(url, "_blank");

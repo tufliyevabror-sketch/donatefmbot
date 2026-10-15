@@ -366,7 +366,7 @@ def user_view_kb(user_id, is_banned=False, is_reseller=False):
 def invite_kb(bot_username, user_id):
     link = f"https://t.me/{bot_username}?start=ref_{user_id}"
     import urllib.parse
-    share = urllib.parse.quote(f"Game Shop do'koniga xush kelibsiz! O'yinlarni arzon narxda sotib oling.\n{link}")
+    share = urllib.parse.quote(f"Donate FM do'koniga xush kelibsiz! O'yinlarni arzon narxda sotib oling.\n{link}")
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="📩 Do'stlarga ulashish", url=f"https://t.me/share/url?text={share}")],

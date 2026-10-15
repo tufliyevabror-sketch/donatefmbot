@@ -248,7 +248,7 @@ def card_number():
 
 
 def card_holder():
-    return get_settings().get("card_holder", "Game Shop")
+    return get_settings().get("card_holder", "DONATE FM")
 
 
 def pay_window_seconds():

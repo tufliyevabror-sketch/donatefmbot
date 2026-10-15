@@ -4,7 +4,7 @@ I18N = {
     "uz": {
         # Asosiy
         "start": (
-            "🎮 <b>Game Shop</b> botiga xush kelibsiz!\n\n"
+            "🎮 <b>Donate FM</b> botiga xush kelibsiz!\n\n"
             "Do'konimiz <b>Telegram Mini App</b>'da ishlaydi.\n"
             "🛍 <b>Do'kon</b> tugmasini bosib katalogni oching.\n\n"
             "Bo'limlar: 🔥 Free Fire • 🪂 PUBG • 🥷 Mobile Legends\n"
@@ -206,7 +206,7 @@ I18N = {
     "ru": {
         # Asosiy
         "start": (
-            "🎮 Добро пожаловать в <b>Game Shop</b>!\n\n"
+            "🎮 Добро пожаловать в <b>Donate FM</b>!\n\n"
             "Магазин работает в <b>Telegram Mini App</b>.\n"
             "🛍 Нажмите кнопку <b>Магазин</b>, чтобы открыть каталог.\n\n"
             "Категории: 🔥 Free Fire • 🪂 PUBG • 🥷 Mobile Legends\n"
@@ -406,7 +406,7 @@ I18N = {
     "en": {
         # Asosiy
         "start": (
-            "🎮 Welcome to <b>Game Shop</b>!\n\n"
+            "🎮 Welcome to <b>Donate FM</b>!\n\n"
             "Our shop runs as a <b>Telegram Mini App</b>.\n"
             "🛍 Tap the <b>Shop</b> button to open the catalogue.\n\n"
             "Categories: 🔥 Free Fire • 🪂 PUBG • 🥷 Mobile Legends\n"
