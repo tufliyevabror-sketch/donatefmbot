@@ -216,16 +216,50 @@ function skeletonList(el) {
 }
 
 /* ---------------- NAVIGATION ---------------- */
-function openView(view) {
-  document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
-  document.getElementById(view).classList.add("active");
+function moveNavGlow(view) {
+  const glow = document.getElementById("nav-glow");
+  const btn = document.querySelector(`#bottom-nav .nav-item[data-view="${view}"]`);
+  if (!glow || !btn) return;
+  if (btn.offsetParent === null || getComputedStyle(glow).display === "none") {
+    glow.style.opacity = "0";
+    return;
+  }
+  glow.style.opacity = "1";
+  glow.style.left = btn.offsetLeft + "px";
+  glow.style.width = btn.offsetWidth + "px";
+}
+
+function openView(view, dir) {
+  const next = document.getElementById(view);
+  const cur = document.querySelector(".view.active");
+  const forward = dir !== "back";
+  if (cur && cur !== next) {
+    const leaving = cur;
+    leaving.classList.remove("active", "enter-fwd", "enter-back");
+    leaving.classList.add("leaving", forward ? "leave-fwd" : "leave-back");
+    leaving.style.top = `-${window.scrollY}px`;
+    setTimeout(() => {
+      leaving.classList.remove("leaving", "leave-fwd", "leave-back");
+      leaving.style.top = "";
+    }, 380);
+  }
+  if (next) {
+    next.classList.remove("leaving", "leave-fwd", "leave-back", "enter-fwd", "enter-back");
+    next.classList.add("active");
+    if (!cur || cur !== next) {
+      void next.offsetWidth;
+      next.classList.add(forward ? "enter-fwd" : "enter-back");
+      setTimeout(() => next.classList.remove("enter-fwd", "enter-back"), 480);
+    }
+  }
   document.getElementById("bottom-nav").style.display =
     view === "view-home" || view === "view-history" || view === "view-settings" || view === "view-admin" ? "flex" : "none";
   document.querySelectorAll(".nav-item").forEach((b) =>
     b.classList.toggle("active", b.dataset.view === view)
   );
+  moveNavGlow(view);
   haptic("selection");
-  window.scrollTo(0, 0);
+  window.scrollTo({ top: 0, behavior: "instant" });
   if (view === "view-home") renderHome();
   if (view === "view-history") loadHistory();
   if (view === "view-settings") renderSettings();
@@ -236,7 +270,7 @@ function openView(view) {
 
 function goBack() {
   const parent = state.backStack.pop() || "view-home";
-  openView(parent);
+  openView(parent, "back");
 }
 
 /* -------- PAGES + DRAG TO CLOSE -------- */
@@ -376,6 +410,29 @@ function setHomeFilter(f) {
   haptic("selection");
 }
 
+/* ---------- O'yin brend ranglari + logolar ---------- */
+const GAME_BRAND = {
+  freefire: { b1: "#ff9a3c", b2: "#ff2d00", glow: "rgba(255,106,0,.5)", plate: "light", wide: true },
+  pubg:     { b1: "#3a3f4a", b2: "#0b0d12", glow: "rgba(244,185,66,.45)", plate: "dark" },
+  ml:       { b1: "#29b6f6", b2: "#0d47a1", glow: "rgba(41,182,246,.5)", plate: "light", wide: true },
+  roblox:   { b1: "#ff5a5f", b2: "#b3141b", glow: "rgba(255,90,95,.5)", plate: "dark" },
+  standoff: { b1: "#7c5cfc", b2: "#31169e", glow: "rgba(124,92,252,.5)", plate: "dark", wide: true },
+  stars:    { b1: "#ffca28", b2: "#ff6d00", glow: "rgba(255,180,40,.5)", emoji: "⭐️" },
+  premium:  { b1: "#a78bfa", b2: "#0e7490", glow: "rgba(167,139,250,.5)", emoji: "💎" },
+};
+const GAME_LOGO_EXT = { freefire: "svg", pubg: "svg", ml: "png", roblox: "svg", standoff: "svg" };
+
+function brandStyle(g) {
+  const b = (g && GAME_BRAND[g.id]) || {};
+  return `--b1:${b.b1 || "#7c5cfc"};--b2:${b.b2 || "#4cc9f0"};--glow:${b.glow || "rgba(124,92,252,.4)"}`;
+}
+function logoInner(g, hero) {
+  const b = (g && GAME_BRAND[g.id]) || {};
+  const ext = g && GAME_LOGO_EXT[g.id];
+  if (ext) return `<img src="/static/img/games/${g.id}.${ext}?v=2" alt="${esc(g ? g.name : "")}" loading="lazy">`;
+  return `<span class="${hero ? "gh-emoji" : "g-emoji"}">${b.emoji || (g && g.emoji) || "🎮"}</span>`;
+}
+
 function renderHome() {
   const grid = document.getElementById("games-grid");
   const favEmpty = document.getElementById("fav-empty");
@@ -410,11 +467,14 @@ function renderHome() {
     const isFav = favIds.has(g.id);
     const card = document.createElement("div");
     card.className = "game-card";
+    card.setAttribute("style", brandStyle(g));
     card.innerHTML = `
-      <div class="p-fav ${isFav ? "on" : ""}" data-gid="${g.id}" onclick="event.stopPropagation();quickFav('${g.id}',this)">${isFav ? "⭐️" : "☆"}</div>
-      <div class="game-emoji">${g.emoji || "🎮"}</div>
-      <div class="game-name">${esc(g.name)}</div>
-      <div class="game-desc">${esc(g.desc || "")}</div>`;
+      <div class="g-strip">${logoInner(g)}<span class="g-shine"></span></div>
+      <div class="g-body">
+        <div class="game-name">${esc(g.name)}</div>
+        <div class="game-desc">${esc(g.desc || "")}</div>
+      </div>
+      <div class="p-fav ${isFav ? "on" : ""}" data-gid="${g.id}" onclick="event.stopPropagation();quickFav('${g.id}',this)">${isFav ? "⭐️" : "☆"}</div>`;
     card.onclick = () => openGame(g.id);
     grid.appendChild(card);
   });
@@ -466,6 +526,28 @@ async function openGame(gameId) {
 function renderGame() {
   const g = state.currentGame;
   if (!g) return;
+  const b = GAME_BRAND[g.id] || {};
+  const view = document.getElementById("view-game");
+  view.style.setProperty("--brand1", b.b1 || "#7c5cfc");
+  view.style.setProperty("--brand2", b.b2 || "#4cc9f0");
+  view.style.setProperty("--brand-glow", b.glow || "rgba(124,92,252,.4)");
+  const hero = document.getElementById("game-hero");
+  if (hero) {
+    hero.setAttribute("style", brandStyle(g));
+    hero.classList.remove("hero-in");
+    void hero.offsetWidth;
+    hero.classList.add("hero-in");
+  }
+  const ghName = document.getElementById("gh-name");
+  if (ghName) ghName.textContent = g.name;
+  const ghDesc = document.getElementById("gh-desc");
+  if (ghDesc) ghDesc.textContent = g.desc || "";
+  const ghLogo = document.getElementById("gh-logo");
+  if (ghLogo) {
+    const ext = GAME_LOGO_EXT[g.id];
+    ghLogo.className = "gh-logo" + (ext ? (b.plate === "light" ? " light" : "") + (b.wide ? " wide" : "") : "");
+    ghLogo.innerHTML = logoInner(g, true);
+  }
   document.getElementById("game-title").textContent = g.name;
   const favBtn = document.getElementById("game-fav-btn");
   if (favBtn) favBtn.textContent = state.gameIsFav ? "⭐️" : "☆";
@@ -1102,6 +1184,8 @@ function switchHistory(btn, tab) {
   state.historyTab = tab;
   document.querySelectorAll(".htab").forEach((b) => b.classList.remove("active"));
   btn.classList.add("active");
+  const list = document.getElementById("history-list");
+  if (list) { list.classList.remove("tab-anim"); void list.offsetWidth; list.classList.add("tab-anim"); }
   loadHistory();
   haptic("selection");
 }
@@ -1472,6 +1556,8 @@ function updateNotifBadge() {
 function switchAdmin(tab) {
   state.adminTab = tab;
   document.querySelectorAll(".atab").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  const content = document.getElementById("admin-content");
+  if (content) { content.classList.remove("tab-anim"); void content.offsetWidth; content.classList.add("tab-anim"); }
   loadAdmin();
   haptic("selection");
 }
@@ -2298,6 +2384,7 @@ async function init() {
 
   hideSplash();
   document.getElementById("nav-admin").style.display = state.isAdmin ? "flex" : "none";
+  moveNavGlow("view-home");
   renderUser();
   renderHome();
   renderGameFilterBar();
@@ -2312,5 +2399,10 @@ async function init() {
     }
   }
 }
+
+window.addEventListener("resize", () => {
+  const active = document.querySelector(".nav-item.active");
+  if (active) moveNavGlow(active.dataset.view);
+});
 
 document.addEventListener("DOMContentLoaded", init);
