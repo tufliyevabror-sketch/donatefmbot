@@ -227,6 +227,9 @@ function moveNavGlow(view) {
   glow.style.opacity = "1";
   glow.style.left = btn.offsetLeft + "px";
   glow.style.width = btn.offsetWidth + "px";
+  glow.classList.remove("moving");
+  void glow.offsetWidth;
+  glow.classList.add("moving");
 }
 
 function openView(view, dir) {
@@ -250,6 +253,11 @@ function openView(view, dir) {
       void next.offsetWidth;
       next.classList.add(forward ? "enter-fwd" : "enter-back");
       setTimeout(() => next.classList.remove("enter-fwd", "enter-back"), 480);
+      next.querySelectorAll(".product-card, .game-card, .h-card, .empty-state, .stagger-list > *").forEach((el) => {
+        el.style.animation = "none";
+        void el.offsetWidth;
+        el.style.animation = "";
+      });
     }
   }
   document.getElementById("bottom-nav").style.display =
@@ -288,7 +296,7 @@ function openPage(id) {
   }
   pageStack.push({ id, prevId: topPage() ? topPage().id : activeViewId() });
   const el = document.getElementById(id);
-  if (el) { el.classList.add("active"); el.style.transform = ""; el.style.opacity = ""; }
+  if (el) { el.classList.remove("closing"); el.classList.add("active"); el.style.transform = ""; el.style.opacity = ""; }
   haptic("selection");
   enableDragClose(el);
 }
@@ -298,9 +306,14 @@ function closePage() {
   if (!cur) return;
   const curEl = document.getElementById(cur.id);
   if (curEl) {
+    const wasDragged = !!curEl.style.transform;
     curEl.classList.remove("active");
     curEl.style.transform = "";
     curEl.style.opacity = "";
+    if (!wasDragged) {
+      curEl.classList.add("closing");
+      setTimeout(() => curEl.classList.remove("closing"), 260);
+    }
   }
   const backEl = document.getElementById(cur.prevId);
   if (!backEl) { openView("view-home"); return; }
@@ -785,6 +798,8 @@ function closePay() { closePage(); }
 async function chooseMethod(method) {
   if (!state.selectedPkg) return;
   if (state._sending) return; // double-click himoya: 2-chi bosish e'tiborsiz
+  const _gId = state.currentGame ? state.currentGame.id : 0;
+  const _pId = state.selectedPkg.id;
   state._sending = true;
   haptic("success");
   try {
@@ -807,16 +822,19 @@ async function chooseMethod(method) {
     return;
   }
   if (res.need_payment) {
+    dropFromCart(_gId, _pId);
     resetOrder();
     showManual({ title: "⭐️ Telegram Stars", body: wt("stars_req2") });
     return;
   }
   if (res.need_manual) {
+    dropFromCart(_gId, _pId);
     resetOrder();
     openPayTimer(res);
     return;
   }
   if (res.ok) {
+    dropFromCart(_gId, _pId);
     if (res.duplicate) {
       toast("ℹ️ " + res.message);
       if (typeof res.balance === "number") {
@@ -833,6 +851,7 @@ async function chooseMethod(method) {
     countUp(document.getElementById("balance-banner"), (state.user.balance || 0) - state.selectedPkg.price, " " + wt("sum_suffix"));
     state.user.balance = (state.user.balance || 0) - state.selectedPkg.price;
     renderUser();
+    pulseBalance();
     resetOrder();
     haptic("success");
   }
@@ -1007,6 +1026,7 @@ function closeManual() {
 /* ---------------- CART ---------------- */
 function addToCart() {
   if (!state.selectedPkg || !state.currentGame) return toast(wt("select_product"));
+  const srcEl = document.querySelector(".product-card.selected");
   const item = {
     gameId: state.currentGame.id,
     gameName: state.currentGame.name,
@@ -1020,6 +1040,7 @@ function addToCart() {
   if (idx >= 0) state.cart.splice(idx, 1);
   else state.cart.push(item);
   updateCartBadge();
+  if (idx < 0) flyToCart(srcEl, document.getElementById("bb-cart-btn"));
   resetOrder();
   renderGame();
   haptic("success");
@@ -1027,10 +1048,61 @@ function addToCart() {
 }
 
 function updateCartBadge() {
-  const b = document.getElementById("cart-badge");
-  if (!b) return;
-  if (state.cart.length) { b.style.display = "flex"; b.textContent = state.cart.length; }
-  else b.style.display = "none";
+  const n = state.cart.length;
+  ["cart-badge", "bb-cart-badge"].forEach((id) => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    if (n) {
+      b.style.display = "flex";
+      b.textContent = n > 99 ? "99+" : String(n);
+      b.classList.remove("pop");
+      void b.offsetWidth;
+      b.classList.add("pop");
+    } else {
+      b.style.display = "none";
+    }
+  });
+}
+
+function flyToCart(srcEl, targetEl) {
+  const src = srcEl;
+  const target = targetEl || document.getElementById("btn-cart");
+  if (!src || !target || !target.getClientRects().length || !src.getClientRects().length) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = src.getBoundingClientRect();
+  const t = target.getBoundingClientRect();
+  const fly = document.createElement("div");
+  fly.className = "fly-emoji";
+  fly.textContent = "🛒";
+  fly.style.left = r.left + r.width / 2 - 16 + "px";
+  fly.style.top = r.top + r.height / 2 - 16 + "px";
+  document.body.appendChild(fly);
+  const dx = (t.left + t.width / 2) - (r.left + r.width / 2);
+  const dy = (t.top + t.height / 2) - (r.top + r.height / 2);
+  const anim = fly.animate([
+    { transform: "translate(0,0) scale(.4) rotate(0deg)", opacity: 0 },
+    { transform: `translate(${dx * 0.22}px, ${dy * 0.22 - 54}px) scale(1.3) rotate(-16deg)`, opacity: 1, offset: 0.35 },
+    { transform: `translate(${dx * 0.7}px, ${dy * 0.7}px) scale(1.05) rotate(12deg)`, opacity: 1, offset: 0.75 },
+    { transform: `translate(${dx}px, ${dy}px) scale(0.25) rotate(0deg)`, opacity: 0.2 },
+  ], { duration: 780, easing: "cubic-bezier(.3,0,.35,1)" });
+  anim.onfinish = () => fly.remove();
+}
+
+function pulseBalance() {
+  const bb = document.getElementById("balance-banner");
+  if (!bb) return;
+  bb.classList.remove("pulse");
+  void bb.offsetWidth;
+  bb.classList.add("pulse");
+}
+
+function dropFromCart(gameId, pkgId) {
+  const i = state.cart.findIndex((c) => c.gameId === gameId && c.pkgId === pkgId);
+  if (i < 0) return;
+  state.cart.splice(i, 1);
+  updateCartBadge();
+  const wrap = document.getElementById("cart-list");
+  if (wrap) renderCart();
 }
 
 function openCart() {
@@ -1108,6 +1180,7 @@ async function checkoutCart() {
   renderUser();
   closePage();
   haptic(fail ? "error" : "success");
+  if (!fail) pulseBalance();
   toast(fail ? wt("batch_result", ok, fail) : wt("batch_ok", ok));
 }
 
@@ -1473,6 +1546,7 @@ async function applyPromo() {
     countUp(document.getElementById("balance-banner"), res.balance, " " + wt("sum_suffix"));
     state.user.balance = res.balance;
     renderUser();
+    pulseBalance();
     closePage();
     haptic("success");
   } else {
@@ -1603,7 +1677,7 @@ function sparklineSvg(series, key = "revenue") {
       </linearGradient>
     </defs>
     <polygon class="area" points="${area}"/>
-    <polyline class="line" points="${line}"/>
+    <polyline class="line" points="${line}" pathLength="1"/>
     <circle class="dot" cx="${last[0]}" cy="${last[1]}" r="4"/>
   </svg>
   <div class="spark-labels">${series.map(s => `<span>${s.day.slice(5)}</span>`).join("")}</div>`;
