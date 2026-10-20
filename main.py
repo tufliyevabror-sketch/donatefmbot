@@ -245,8 +245,8 @@ def main():
     threading.Thread(target=start_server, daemon=True).start()
     time.sleep(1.5)
 
-    external = os.environ.get("EXTERNAL_TUNNEL") == "1"
-    env_url = os.environ.get("WEBAPP_URL", "").strip()
+    external = os.environ.get("EXTERNAL_TUNNEL") == "1" or os.environ.get("RENDER") == "true"
+    env_url = os.environ.get("WEBAPP_URL", "").strip() or os.environ.get("RENDER_EXTERNAL_URL", "").strip()
     if env_url:
         url, procs = env_url, []
         logger.info("WEBAPP_URL muhitdan olindi: %s", env_url)
