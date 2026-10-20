@@ -27,7 +27,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN topilmadi: .env fayliga BOT_TOKEN=... yozing")
 
-WEBAPP_URL = os.getenv("WEBAPP_URL", "")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "") or os.getenv("RENDER_EXTERNAL_URL", "")
 
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "7366064785").split(",") if x.strip().isdigit()]
 
