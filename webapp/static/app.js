@@ -93,6 +93,8 @@ let state = {
   pkgMax: "",
 };
 
+let mainButtonAction = null;
+
 const fmt = (v) => Number(v || 0).toLocaleString("ru-RU").replace(/,/g, " ");
 
 function hideSplash() {
@@ -107,6 +109,8 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
 /* ---------------- THEME ---------------- */
 function systemTheme() {
   try {
+    const cs = tg && tg.colorScheme;
+    if (cs === "light" || cs === "dark") return cs;
     return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   } catch (e) {
     return "dark";
@@ -130,6 +134,21 @@ function applyTheme(theme, persist) {
   const ta = document.getElementById("theme-auto");
   if (ta) ta.classList.toggle("active", state.themeMode === "auto");
   if (persist && state.user) api("/api/save_theme", { theme: state.theme });
+  applyTgThemeParams();
+}
+
+function applyTgThemeParams() {
+  const root = document.documentElement;
+  if (tg && tg.themeParams && state.themeMode === "auto") {
+    const p = tg.themeParams;
+    if (p.bg_color) root.style.setProperty("--bg", p.bg_color);
+    if (p.secondary_bg_color) root.style.setProperty("--card", p.secondary_bg_color);
+    root.setAttribute("data-tg", "1");
+  } else {
+    root.style.removeProperty("--bg");
+    root.style.removeProperty("--card");
+    root.removeAttribute("data-tg");
+  }
 }
 
 function toggleTheme() {
@@ -179,11 +198,108 @@ function haptic(type = "light") {
   } catch (e) {}
 }
 
+function tgPopup(title, message, buttons) {
+  return new Promise((resolve) => {
+    if (tg && tg.showPopup) {
+      tg.showPopup(
+        {
+          title: title || "",
+          message: message || "",
+          buttons: buttons || [{ id: "ok", type: "default", text: "OK" }],
+        },
+        (id) => resolve(id)
+      );
+    } else if (tg && tg.showAlert) {
+      tg.showAlert([title, message].filter(Boolean).join("\n"));
+      resolve("ok");
+    } else {
+      window.alert([title, message].filter(Boolean).join("\n"));
+      resolve("ok");
+    }
+  });
+}
+
+/* ---------------- LOTTIE ---------------- */
+const LOTTIE_URLS = {
+  loading: "/static/lottie/loading.json",
+  success: "/static/lottie/success.json",
+  empty: "/static/lottie/empty.json",
+};
+
+function playLottie(el, name, opts = {}) {
+  if (!el || typeof lottie === "undefined") return null;
+  try {
+    return lottie.loadAnimation({
+      container: el,
+      renderer: "svg",
+      loop: opts.loop !== false,
+      autoplay: true,
+      path: LOTTIE_URLS[name] || name,
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+function lottieSuccess() {
+  if (typeof lottie === "undefined") return;
+  const el = document.createElement("div");
+  el.className = "lottie-success";
+  document.body.appendChild(el);
+  const a = playLottie(el, "success", { loop: false });
+  if (!a) { el.remove(); return; }
+  try { a.addEventListener("complete", () => el.remove()); } catch (e) {}
+  setTimeout(() => el.remove(), 1800);
+}
+
+function syncTgChrome() {
+  const bb = tg && tg.BackButton;
+  if (!bb) return;
+  const v = activeViewId();
+  const isTab = v === "view-home" || v === "view-history" || v === "view-settings" || v === "view-admin";
+  const show = !!topPage() || !isTab;
+  try { show ? bb.show() : bb.hide(); } catch (e) {}
+}
+
+function syncMainButton() {
+  const mb = tg && tg.MainButton;
+  if (!mb) return;
+  const page = topPage() ? topPage().id : null;
+  let show = false;
+  if (page === "pay-sheet") {
+    mainButtonAction = () => chooseMethod("balance");
+    try { mb.setParams({ text: "💠 " + wt("pay_with_bal") }); } catch (e) {}
+    show = true;
+  } else if (page === "cart-sheet" && state.cart.length) {
+    const total = state.cart.reduce((s, c) => s + c.price, 0);
+    mainButtonAction = () => checkoutCart();
+    try { mb.setParams({ text: "💳 " + wt("pay_with_balance_btn", fmt(total)) }); } catch (e) {}
+    show = true;
+  } else if (!page && activeViewId() === "view-game" && state.selectedPkg) {
+    mainButtonAction = () => openPay();
+    try { mb.setParams({ text: "🛒 " + wt("buy") }); } catch (e) {}
+    show = true;
+  }
+  document.body.classList.toggle("tg-main-active", show);
+  try { show ? mb.show() : mb.hide(); } catch (e) {}
+  if (!show) mainButtonAction = null;
+}
+
 function initTg() {
   if (!tg) return;
   tg.ready();
   tg.expand();
   tg.disableVerticalSwipes?.();
+  try { tg.onEvent?.("themeChanged", () => { if (state.themeMode === "auto") applyTheme("auto", false); }); } catch (e) {}
+  try {
+    tg.BackButton?.onClick(() => {
+      if (topPage()) closePage();
+      else goBack();
+    });
+  } catch (e) {}
+  try {
+    tg.MainButton?.onClick(() => { if (typeof mainButtonAction === "function") mainButtonAction(); });
+  } catch (e) {}
   const savedMode = localStorage.getItem("gs_theme_mode");
   const saved = localStorage.getItem("gs_theme");
   applyTheme(savedMode || saved || "auto", false);
@@ -244,6 +360,12 @@ function skeletonList(el) {
     `<div class="h-card"><div class="sk sk-line w40"></div><div class="sk sk-line"></div><div class="sk sk-line w60"></div></div>`
   ).join("");
 }
+function skeletonProducts(el, n = 8) {
+  if (!el) return;
+  el.innerHTML = Array.from({ length: n }, () =>
+    `<div class="sk sk-prod"></div>`
+  ).join("");
+}
 
 /* ---------------- NAVIGATION ---------------- */
 function moveNavGlow(view) {
@@ -296,6 +418,8 @@ function openView(view, dir) {
     b.classList.toggle("active", b.dataset.view === view)
   );
   moveNavGlow(view);
+  syncTgChrome();
+  syncMainButton();
   haptic("selection");
   window.scrollTo({ top: 0, behavior: "instant" });
   if (view === "view-home") renderHome();
@@ -329,6 +453,8 @@ function openPage(id) {
   if (el) { el.classList.remove("closing"); el.classList.add("active"); el.style.transform = ""; el.style.opacity = ""; }
   haptic("selection");
   enableDragClose(el);
+  syncTgChrome();
+  syncMainButton();
 }
 
 function closePage() {
@@ -349,6 +475,8 @@ function closePage() {
   if (!backEl) { openView("view-home"); return; }
   if (backEl.classList.contains("page")) backEl.classList.add("active");
   else openView(cur.prevId);
+  syncTgChrome();
+  syncMainButton();
 }
 
 const _dragBound = new WeakSet();
@@ -549,7 +677,7 @@ async function toggleGameFav() {
 }
 
 async function openGame(gameId) {
-  skeletonList(document.getElementById("products-grid"));
+  skeletonProducts(document.getElementById("products-grid"), 8);
   const res = await api("/api/game", { game_id: gameId });
   if (!res.ok) return toast(wt("game_not_found"));
   state.currentGame = res.game;
@@ -705,6 +833,7 @@ function selectPkg(pkg, el) {
   document.getElementById("buy-name").textContent = `${state.currentGame.name} — ${pkg.name}`;
   document.getElementById("buy-price").textContent = `${fmt(pkg.price)} ${wt("sum_suffix")}`;
   document.getElementById("buy-bar").style.display = "flex";
+  syncMainButton();
   haptic("selection");
 }
 
@@ -1047,6 +1176,7 @@ function resetOrder() {
   state.selectedPkg = null;
   document.getElementById("buy-bar").style.display = "none";
   document.querySelectorAll(".product-card").forEach((c) => c.classList.remove("selected"));
+  syncMainButton();
 }
 
 function closeManual() {
@@ -1055,6 +1185,32 @@ function closeManual() {
 }
 
 /* ---------------- CART ---------------- */
+function saveCartCloud() {
+  const data = JSON.stringify(state.cart || []);
+  try {
+    if (tg && tg.CloudStorage) {
+      tg.CloudStorage.setItem("cart_v1", data, () => {});
+    } else {
+      localStorage.setItem("gs_cart", data);
+    }
+  } catch (e) {}
+}
+
+function loadCartCloud(cb) {
+  const done = (val) => {
+    let arr = [];
+    try { arr = JSON.parse(val || "[]"); } catch (e) {}
+    cb(Array.isArray(arr) ? arr : []);
+  };
+  try {
+    if (tg && tg.CloudStorage) {
+      tg.CloudStorage.getItem("cart_v1", (err, val) => done(err ? "[]" : val));
+    } else {
+      done(localStorage.getItem("gs_cart"));
+    }
+  } catch (e) { cb([]); }
+}
+
 function addToCart() {
   if (!state.selectedPkg || !state.currentGame) return toast(wt("select_product"));
   const srcEl = document.querySelector(".product-card.selected");
@@ -1071,6 +1227,7 @@ function addToCart() {
   if (idx >= 0) state.cart.splice(idx, 1);
   else state.cart.push(item);
   updateCartBadge();
+  saveCartCloud();
   if (idx < 0) flyToCart(srcEl, document.getElementById("bb-cart-btn"));
   resetOrder();
   renderGame();
@@ -1135,6 +1292,7 @@ const REDUCED_MOTION = (() => {
 
 function successBurst() {
   if (REDUCED_MOTION) return;
+  lottieSuccess();
   const el = document.createElement("div");
   el.className = "success-burst";
   el.innerHTML =
@@ -1270,6 +1428,7 @@ function renderCart() {
   if (!wrap) return;
   if (!state.cart.length) {
     wrap.innerHTML = emptyHtml("🛒", wt("cart_empty"), wt("cart_empty_text"), "🎮 " + wt("view_games"), "closePage();openView('view-home')");
+    syncMainButton();
     return;
   }
   const total = state.cart.reduce((s, c) => s + c.price, 0);
@@ -1288,11 +1447,13 @@ function renderCart() {
     </div>
     <button class="big-btn" onclick="checkoutCart()">${wt("pay_with_balance_btn", fmt(total))}</button>
     <button class="ghost-btn" onclick="clearCart()">${wt("clear_cart2")}</button>`;
+  syncMainButton();
 }
 
 function removeCartItem(i) {
   state.cart.splice(i, 1);
   updateCartBadge();
+  saveCartCloud();
   renderCart();
   haptic("selection");
 }
@@ -1300,6 +1461,7 @@ function removeCartItem(i) {
 function clearCart() {
   state.cart = [];
   updateCartBadge();
+  saveCartCloud();
   renderCart();
   toast(wt("cart_cleared"));
 }
@@ -1332,6 +1494,7 @@ async function checkoutCart() {
   }
   state.cart = [];
   updateCartBadge();
+  saveCartCloud();
   renderUser();
   closePage();
   haptic(fail ? "error" : "success");
@@ -2610,6 +2773,18 @@ async function loadAdminAudit(content) {
 }
 
 function confirmDialog(title, text) {
+  if (tg && tg.showPopup) {
+    return new Promise((resolve) => {
+      tg.showPopup({
+        title: title || "",
+        message: text || "",
+        buttons: [
+          { id: "yes", type: "default", text: wt("confirm") },
+          { id: "no", type: "cancel", text: wt("cancel") },
+        ],
+      }, (id) => resolve(id === "yes"));
+    });
+  }
   const input = document.getElementById("modal-input");
   input.style.display = "none";
   document.getElementById("modal-title").textContent = title;
@@ -2631,6 +2806,8 @@ function confirmDialog(title, text) {
 /* ---------------- INIT ---------------- */
 async function init() {
   initTg();
+  const _sl = document.getElementById("splash-lottie");
+  if (_sl && playLottie(_sl, "loading")) _sl.textContent = "";
   skeletonGames(6);
   const res = await api("/api/init");
   if (!res.ok) {
@@ -2671,6 +2848,7 @@ async function init() {
   applyTheme(modeInit || res.theme || localStorage.getItem("gs_theme") || "auto", false);
   if (res.favorites) state.favorites = res.favorites;
   if (typeof res.unread_notifs === "number") { state.unreadNotifs = res.unread_notifs; updateNotifBadge(); }
+  loadCartCloud((arr) => { state.cart = arr; updateCartBadge(); });
 
   hideSplash();
   document.getElementById("nav-admin").style.display = state.isAdmin ? "flex" : "none";

@@ -54,30 +54,20 @@ async def cmd_start(message: Message):
         message.from_user.full_name,
         referrer_id,
     )
-    kb_start = InlineKeyboardMarkup(inline_keyboard=[])
     weburl = config.get_settings().get("webapp_url") or config.WEBAPP_URL
+    kb_start = None
     if weburl:
         kb_start = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="🛍 Mini App'ni ochish",
+                        text="⚡️ Do'kon — Cyber Arena",
                         web_app=WebAppInfo(url=weburl),
                     )
                 ]
             ]
         )
-    add_text = ""
-    if referrer_id:
-        add_text = "\n\n🎁 Siz <b>taklif havolasi</b> orqali keldingiz!"
-    advert = (
-        "\n\n━━━━━━━━━━━━━━━\n"
-        "🎮 <b>Free Fire, PUBG, MLBB, Roblox va boshqalar</b> — diamond, UC, star va premium paketlar\n"
-        "💰 Balans, ⭐️ Telegram Stars yoki 💳 karta orqali to'lov\n"
-        "🎟 Promokodlar, 🤝 referral bonus, 💎 PRO keshbek\n"
-        "⚡️ Buyurtma 5–30 daqiqada bajariladi"
-    )
-    start_body = ls.start_text(_lang(message)) + add_text + advert
+    start_body = ls.start_text(_lang(message))
     banner = _find_banner()
     if banner:
         try:

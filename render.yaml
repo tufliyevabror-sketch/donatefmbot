@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: donatefmbot
+    env: docker
+    region: frankfurt
+    plan: free
+    branch: main
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_IDS
+        value: "7366064785"
+      - key: ALLOW_LAPTOP
+        value: "1"

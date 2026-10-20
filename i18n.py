@@ -4,11 +4,13 @@ I18N = {
     "uz": {
         # Asosiy
         "start": (
-            "🎮 <b>Donate FM</b> botiga xush kelibsiz!\n\n"
-            "Do'konimiz <b>Telegram Mini App</b>'da ishlaydi.\n"
-            "🛍 <b>Do'kon</b> tugmasini bosib katalogni oching.\n\n"
-            "Bo'limlar: 🔥 Free Fire • 🪂 PUBG • 🥷 Mobile Legends\n"
-            "👾 Roblox • 🔫 Standoff 2 • ⭐️ Stars • 👑 TG Premium"
+            "⚡️ <b>DONATE FM</b> — Cyber Arena'ga xush kelibsiz!\n\n"
+            "💎 Premium gaming top-up tizimi.\n"
+            "Tez, ishonchli, 24/7.\n\n"
+            "🔥 <b>Free Fire</b> • 🪂 <b>PUBG</b> • 🥷 <b>MLBB</b>\n"
+            "👾 <b>Roblox</b> • 🔫 <b>Standoff 2</b>\n"
+            "⭐️ <b>Stars</b> • 👑 <b>TG Premium</b>\n\n"
+            "🛍 Do'konga o'tish uchun tugmani bosing 👇"
         ),
         "menu_text": "🏠 <b>Bosh sahifa</b>\n\nKerakli bo'limni tanlang 👇",
         "games_title": "🛒 <b>O'yinlar katalogi</b>\n\nTanlang 👇",
@@ -206,11 +208,13 @@ I18N = {
     "ru": {
         # Asosiy
         "start": (
-            "🎮 Добро пожаловать в <b>Donate FM</b>!\n\n"
-            "Магазин работает в <b>Telegram Mini App</b>.\n"
-            "🛍 Нажмите кнопку <b>Магазин</b>, чтобы открыть каталог.\n\n"
-            "Категории: 🔥 Free Fire • 🪂 PUBG • 🥷 Mobile Legends\n"
-            "👾 Roblox • 🔫 Standoff 2 • ⭐️ Stars • 👑 TG Premium"
+            "⚡️ <b>DONATE FM</b> — Добро пожаловать в Cyber Arena!\n\n"
+            "💎 Премиум игровой top-up.\n"
+            "Быстро, надёжно, 24/7.\n\n"
+            "🔥 <b>Free Fire</b> • 🪂 <b>PUBG</b> • 🥷 <b>MLBB</b>\n"
+            "👾 <b>Roblox</b> • 🔫 <b>Standoff 2</b>\n"
+            "⭐️ <b>Stars</b> • 👑 <b>TG Premium</b>\n\n"
+            "🛍 Нажмите кнопку, чтобы открыть магазин 👇"
         ),
         "menu_text": "<b>🏠 Главная</b>\n\nВыберите раздел 👇",
         "games_title": "<b>🛒 Каталог игр</b>\n\nВыберите 👇",
@@ -406,11 +410,13 @@ I18N = {
     "en": {
         # Asosiy
         "start": (
-            "🎮 Welcome to <b>Donate FM</b>!\n\n"
-            "Our shop runs as a <b>Telegram Mini App</b>.\n"
-            "🛍 Tap the <b>Shop</b> button to open the catalogue.\n\n"
-            "Categories: 🔥 Free Fire • 🪂 PUBG • 🥷 Mobile Legends\n"
-            "👾 Roblox • 🔫 Standoff 2 • ⭐️ Stars • 👑 TG Premium"
+            "⚡️ <b>DONATE FM</b> — Welcome to Cyber Arena!\n\n"
+            "💎 Premium gaming top-up.\n"
+            "Fast, trusted, 24/7.\n\n"
+            "🔥 <b>Free Fire</b> • 🪂 <b>PUBG</b> • 🥷 <b>MLBB</b>\n"
+            "👾 <b>Roblox</b> • 🔫 <b>Standoff 2</b>\n"
+            "⭐️ <b>Stars</b> • 👑 <b>TG Premium</b>\n\n"
+            "🛍 Tap the button to open the shop 👇"
         ),
         "menu_text": "<b>🏠 Home</b>\n\nChoose a section 👇",
         "games_title": "<b>🛒 Games catalog</b>\n\nSelect 👇",

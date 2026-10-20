@@ -58,7 +58,9 @@ def check_allowed_environment():
 
 
 def start_server():
-    uvicorn.run(app, host="127.0.0.1", port=8010, log_level="warning")
+    host = os.environ.get("WEBAPP_HOST", "127.0.0.1")
+    port = int(os.environ.get("WEBAPP_PORT") or os.environ.get("PORT") or "8010")
+    uvicorn.run(app, host=host, port=port, log_level="warning")
 
 
 CLOUDFLARED_PROC = None
@@ -244,7 +246,11 @@ def main():
     time.sleep(1.5)
 
     external = os.environ.get("EXTERNAL_TUNNEL") == "1"
-    if external:
+    env_url = os.environ.get("WEBAPP_URL", "").strip()
+    if env_url:
+        url, procs = env_url, []
+        logger.info("WEBAPP_URL muhitdan olindi: %s", env_url)
+    elif external:
         url, procs = None, []
         logger.info("EXTERNAL_TUNNEL=1 — tashqi tunnel ishlatiladi")
     else:
