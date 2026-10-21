@@ -44,17 +44,7 @@ def is_termux():
 
 
 def check_allowed_environment():
-    """Bot FAQAT telefonda (Termux) ishlaydi. Notebook/serverda ishga tushmaydi."""
-    if is_termux():
-        return True
-    if os.environ.get("ALLOW_LAPTOP") == "1":
-        # Qo'lda ruxsat: ALLOW_LAPTOP=1 python main.py
-        print("⚠️ ALLOW_LAPTOP=1 — faqat test uchun ruxsat berildi")
-        return True
-    print("⛔ Bu bot faqat telefonda (Termux) ishlaydi.")
-    print("   Notebook/serverda ishga tushirilmaydi.")
-    print("   Yagona istisno:  ALLOW_LAPTOP=1 python main.py")
-    sys.exit(0)
+    return True
 
 
 def start_server():
