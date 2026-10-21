@@ -134,7 +134,10 @@ def _settings_file_lock():
 
 
 def get_settings():
-    return _load_settings()
+    s = _load_settings()
+    if WEBAPP_URL:
+        s["webapp_url"] = WEBAPP_URL
+    return s
 
 
 def update_settings(new_data):
