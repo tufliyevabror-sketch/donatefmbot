@@ -1,4 +1,4 @@
-"""Avtomatik top-up yetkazish (delivery) moduli."""
+"""Avtomatik top-up yetkazish (delivery) moduli (Enhanced Auto-Fulfillment API connector)."""
 import asyncio
 import logging
 import re
@@ -33,12 +33,12 @@ def order_parts(o):
 
 def _http_post(url, payload, timeout=15):
     import requests
-    return requests.post(url, json=payload, timeout=timeout)
+    return requests.post(url, json=payload, timeout=timeout, headers={"User-Agent": "GameShopBot/2.0", "Accept": "application/json"})
 
 
 def _http_get(url, timeout=12):
     import requests
-    return requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
+    return requests.get(url, timeout=timeout, headers={"User-Agent": "GameShopBot/2.0", "Accept": "application/json"})
 
 
 async def _verify_standoff(player_id):
@@ -73,7 +73,6 @@ async def _verify_standoff(player_id):
         return None
 
 
-# O'yin ID formatlari (noto'g'ri ID ni xariddan oldin ushlab olish uchun)
 GAME_ID_RULES = {
     "freefire": (re.compile(r"^\d{5,15}$"), "faqat raqamlar, 5–15 ta (masalan: 2627497746)"),
     "standoff": (re.compile(r"^[A-Za-z0-9_.\-]{3,24}$"), "nickname: 3–24 ta lotin harfi/raqam (masalan: ProGamer)"),
@@ -84,7 +83,7 @@ GAME_ID_RULES = {
 
 
 def validate_player_id(game_id, value):
-    """(to'g'rimi, qo'llanma matni) — ID formati tekshiruvi (sozlamadan o'chirilishi mumkin)."""
+    """(to'g'rimi, qo'llanma matni) — ID formati tekshiruvi."""
     if not config.bool_setting("id_validation_enabled", True):
         return True, ""
     rule = GAME_ID_RULES.get(game_id)
@@ -143,11 +142,9 @@ async def _verify_freefire(player_id):
 
 
 async def _verify_roblox(player_id):
-    """Roblox user ID yoki username orqali tekshiradi."""
     import re
     pid = str(player_id).strip()
     try:
-        # Agar ID bo'lsa (faqat raqamlar)
         if pid.isdigit():
             resp = await asyncio.to_thread(_http_get, f"https://users.roblox.com/v1/users/{pid}")
             if resp.status_code == 200:
@@ -155,7 +152,6 @@ async def _verify_roblox(player_id):
                 name = data.get("displayName") or data.get("name")
                 if name:
                     return {"ok": True, "name": name}
-        # Agar username bo'lsa (harflar/raqamlar/_)
         elif re.match(r"^[A-Za-z0-9_]{3,20}$", pid):
             resp = await asyncio.to_thread(
                 _http_post,
@@ -175,7 +171,7 @@ async def _verify_roblox(player_id):
 
 
 async def test_provider():
-    """Provider ulanganini tekshirish (pul sarflamaydi — faqat /verify)."""
+    """Provider ulanganini tekshirish."""
     cfg = config.get_delivery_config()
     url = (cfg.get("api_url") or "").rstrip("/")
     key = cfg.get("api_key") or ""
@@ -207,20 +203,35 @@ async def deliver_order(order):
         "game": p["game"],
         "userid": p["player"],
         "sku": p["package"],
-        "qty": p["amount"],
+        "qty": p["amount_label"],
         "order_id": p["order_id"],
+        "price": p["price"],
     }
     try:
-        resp = await asyncio.to_thread(
-            _http_post, cfg["api_url"].rstrip("/") + "/fulfill", payload
-        )
-        if resp.status_code not in (200, 201):
-            return {"status": "error", "msg": f"HTTP {resp.status_code}: {resp.text[:200]}"}
+        # Retry mechanism for robust auto-fulfillment
+        resp = None
+        for attempt in range(2):
+            try:
+                resp = await asyncio.to_thread(
+                    _http_post, cfg["api_url"].rstrip("/") + "/fulfill", payload
+                )
+                if resp.status_code in (200, 201):
+                    break
+            except Exception:
+                if attempt == 1:
+                    raise
+                await asyncio.sleep(1)
+
+        if not resp or resp.status_code not in (200, 201):
+            code = resp.status_code if resp else "NO_RESP"
+            text = resp.text[:200] if resp else "timeout"
+            return {"status": "error", "msg": f"HTTP {code}: {text}"}
+        
         data = resp.json()
-        ok = data.get("ok") if "ok" in data else data.get("status") in ("ok", "success", "done")
+        ok = data.get("ok") if "ok" in data else data.get("status") in ("ok", "success", "done", "completed")
         if ok:
             await db.set_order_status(order["id"], "bajarildi")
-            return {"status": "done", "msg": str(data.get("message", ""))}
+            return {"status": "done", "msg": str(data.get("message", "success"))}
         return {"status": "fail", "msg": str(data.get("error", data.get("message", "muvaffaqiyatsiz")))}
     except Exception as e:
         logger.exception("deliver_order xatosi #%s", order["id"])
@@ -268,7 +279,8 @@ async def process_pending_orders(bot):
                 else:
                     lang = await order_notify.lang_of(o["user_id"])
                     await bot.send_message(p["user_id"], order_notify.fail_message(o, res["msg"], lang))
-                    await _notify_admins_delivery_fail(o, res, bot)
+                    if bot:
+                        await _notify_admins_delivery_fail(o, res, bot)
             except Exception:
                 pass
     if done:
